@@ -1,4 +1,4 @@
-package dsorting
+package dsorting.common
 
 import java.net.InetSocketAddress
 
@@ -24,8 +24,4 @@ package object primitive {
   class PartitionTable(val identity: Identity, val master: InetSocketAddress, val slaves: Vector[SlaveRange]) {
     def this(identity: Identity, master: InetSocketAddress) = this(identity, master, Vector())
   }
-}
-
-object Setting {
-  val MasterPort = 25252
 }

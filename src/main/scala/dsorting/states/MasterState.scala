@@ -2,8 +2,8 @@ package dsorting.states.master
 
 import java.net.{InetAddress, InetSocketAddress}
 
-import dsorting.Setting
-import dsorting.primitive._
+import dsorting.common.Setting
+import dsorting.common.primitive._
 
 class SamplingState(val numSlaves: Integer) {
   private val masterAddress = new InetSocketAddress(InetAddress.getLocalHost, Setting.MasterPort)

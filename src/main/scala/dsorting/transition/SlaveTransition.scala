@@ -2,7 +2,7 @@ package dsorting.transition
 
 import java.net.{InetSocketAddress, URI, URISyntaxException}
 
-import dsorting.primitive._
+import dsorting.common.primitive._
 import dsorting.states.slave._
 
 import scala.concurrent.ExecutionContext.Implicits.global

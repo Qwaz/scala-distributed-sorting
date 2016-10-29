@@ -1,6 +1,6 @@
 package dsorting.states.slave
 
-import dsorting.primitive._
+import dsorting.common.primitive._
 
 class SamplingState(slaveStartupInfo: SlaveStartupInfo) {
   val partitionTable = new PartitionTable(UnknownSlave, slaveStartupInfo.masterAddress)
