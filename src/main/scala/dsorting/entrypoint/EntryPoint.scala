@@ -1,13 +1,17 @@
 package dsorting.entrypoint
 
+import scala.concurrent.ExecutionContext.Implicits.global
+
 // sbt "run arg1 arg2 arg3"
 
 object MasterApp extends App {
-  println("Hello from Master!")
-  println("Args are:\n" + args.mkString("\n"))
+  import dsorting.transition.master._
+
+  parseArgument(args) map initializeState
 }
 
 object SlaveApp extends App {
-  println("Hello from Slave...")
-  println("Args are:\n" + args.mkString("\n"))
+  import dsorting.transition.slave._
+
+  parseArgument(args) map initializeState
 }

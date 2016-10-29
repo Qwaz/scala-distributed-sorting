@@ -10,7 +10,7 @@ package object primitive {
     require(inputFiles.nonEmpty)
   }
 
-  type SlaveStartupInfo = (InetSocketAddress, IODirectoryInfo)
+  class SlaveStartupInfo(val masterAddress: InetSocketAddress, val ioDirectoryInfo: IODirectoryInfo)
 
   case class Entity(key: Key, value: Value)
 
@@ -24,4 +24,8 @@ package object primitive {
   class PartitionTable(val identity: Identity, val master: InetSocketAddress, val slaves: Vector[SlaveRange]) {
     def this(identity: Identity, master: InetSocketAddress) = this(identity, master, Vector())
   }
+}
+
+object Setting {
+  val MasterPort = 25252
 }
