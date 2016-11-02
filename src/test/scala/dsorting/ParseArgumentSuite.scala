@@ -54,7 +54,7 @@ class ParseArgumentSuite extends AsyncFlatSpec {
       }
     }
 
-    it should "parse ourpur directory correctly" in {
+    it should "parse ourput directory correctly" in {
       parseArgument(slaveArgumentArray) map { slaveStartupInfo => assert(
         slaveStartupInfo.ioDirectoryInfo.outputDirectory == "d"
       )

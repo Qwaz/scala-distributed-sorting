@@ -1,8 +1,7 @@
 package dsorting.common
 
-import java.io.{ObjectInputStream, ObjectOutputStream}
 import java.net.{InetSocketAddress, Socket, SocketAddress}
-import java.nio.{ByteBuffer, ByteOrder}
+import java.nio.ByteBuffer
 import java.nio.channels.{SelectionKey, Selector, ServerSocketChannel, SocketChannel}
 
 import com.typesafe.scalalogging.Logger
@@ -120,9 +119,9 @@ package object messaging {
       key.channel match {
         case socketChannel: SocketChannel =>
           val buffer = ByteBuffer.allocateDirect(Setting.BufferSize)
-          val readedBytes = socketChannel.read(buffer)
+          val readBytes = socketChannel.read(buffer)
           buffer.flip()
-          messageHandler.handleMessage(readMessageFrom(buffer, readedBytes))
+          messageHandler.handleMessage(readMessageFrom(buffer, readBytes))
           buffer.clear
       }
     }
@@ -132,9 +131,9 @@ package object messaging {
       socketChannel.register(selector, SelectionKey.OP_READ)
     }
 
-    private def readMessageFrom(buffer: ByteBuffer, readedBytes: Integer) = {
+    private def readMessageFrom(buffer: ByteBuffer, readBytes: Integer) = {
       val messageType = MessageType(buffer.get())
-      val data = new Array[Byte](readedBytes-1)
+      val data = new Array[Byte](readBytes-1)
       buffer.get(data)
       new Message(messageType, data)
     }
