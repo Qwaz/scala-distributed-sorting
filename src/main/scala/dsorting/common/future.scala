@@ -1,6 +1,6 @@
 package dsorting.common
 
-import scala.concurrent.{ExecutionContext, Future, Promise}
+import scala.concurrent._
 
 package object future {
   implicit class FutureCompanionOps(val x: Future.type) extends AnyVal {

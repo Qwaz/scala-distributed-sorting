@@ -3,6 +3,7 @@ package dsorting.transition
 import java.net.{InetAddress, InetSocketAddress}
 import java.nio.charset.Charset
 
+import com.typesafe.scalalogging.Logger
 import dsorting.common.Setting
 import dsorting.common.future.Subscription
 import dsorting.common.messaging._
@@ -15,6 +16,8 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Future, Promise}
 
 package object master {
+  val logger = Logger("Master")
+
   def parseArgument(args: Array[String]): Future[Integer] = Future {
     if (args.length != 1) throw new IllegalArgumentException("Argument size must be 1")
     args(0).toInt
@@ -23,7 +26,8 @@ package object master {
   def prepareSampling(numSlaves: Integer): SamplingState = {
     val _numSlaves = numSlaves
     new SamplingState {
-      private val masterAddress = new InetSocketAddress(InetAddress.getLocalHost, Setting.MasterPort)
+      private val masterAddress = new InetSocketAddress(InetAddress.getLocalHost.getHostAddress, Setting.MasterPort)
+      logger.debug(s"Master Address: $masterAddress")
 
       val listener = new MessageListener(masterAddress)
       val serverSubscription: Subscription = listener.startServer
@@ -36,16 +40,21 @@ package object master {
       private val sampleKeys = new ArrayBuffer[Key]()
 
       def run() = {
+        logger.info("Sampling: run()")
+
         val p = Promise[PartitionTable]()
         listener.replaceHandler(new MessageHandler {
           def handleMessage(message: Message): Future[Unit] = Future {
             message.messageType match {
               case MessageType.Introduce =>
-                slaveList += InetSocketAddressSerializer.fromByteArray(message.data)
+                val slaveAddress = InetSocketAddressSerializer.fromByteArray(message.data)
+                slaveList += slaveAddress
+                logger.debug(s"Introduce data received from $slaveAddress")
               case MessageType.SampleData =>
                 sampleKeys ++= KeyListSerializer.fromByteArray(message.data)
                 remainingSlaves -= 1
                 if (remainingSlaves == 0) p.success(createPartitionTable())
+                logger.debug(s"Sample data received - remaining slaves $remainingSlaves")
               case _ => ()
             }
           }
@@ -61,6 +70,8 @@ package object master {
         }
         new PartitionTable(Master, masterAddress, slaveRanges.toVector)
       }
+
+      logger.info("Sampling: Initialized")
     }
   }
 
@@ -75,6 +86,8 @@ package object master {
       val partitionTable = _partitionTable
 
       def run() = {
+        logger.info("Partitioning: run()")
+
         val p = Promise[Unit]()
         listener.replaceHandler(new MessageHandler {
           def handleMessage(message: Message): Future[Unit] = Future {
@@ -84,6 +97,8 @@ package object master {
         // TODO: send serialized partition table
         p.future
       }
+
+      logger.info("Partitioning: Initialized")
     }
   }
 }

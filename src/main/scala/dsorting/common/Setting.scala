@@ -34,7 +34,6 @@ object Setting {
   def MasterPort = nextAvailablePort(25252)
   def SlavePort = nextAvailablePort(3939)
 
-  val ByteOrder = java.nio.ByteOrder.LITTLE_ENDIAN
   val BufferSize = 4096
 
   val KeySize = 10

@@ -1,9 +1,11 @@
 package dsorting.common
 
+import java.io.{ObjectInputStream, ObjectOutputStream}
 import java.net.{InetSocketAddress, Socket, SocketAddress}
-import java.nio.ByteBuffer
+import java.nio.{ByteBuffer, ByteOrder}
 import java.nio.channels.{SelectionKey, Selector, ServerSocketChannel, SocketChannel}
 
+import com.typesafe.scalalogging.Logger
 import dsorting.common.future._
 import dsorting.common.primitive._
 
@@ -38,13 +40,7 @@ package object messaging {
     val SortingComplete = Value
   }
 
-  class Message(val messageType: MessageType.MessageType, val data: Array[Byte]) {
-    val length = data.length
-  }
-
-  def intToByte(int: Integer): Array[Byte] = {
-    ByteBuffer.allocate(4).order(Setting.ByteOrder).putInt(int).array
-  }
+  class Message(val messageType: MessageType.MessageType, val data: Array[Byte])
 
   class Channel(val identity: Identity, address: SocketAddress) {
     private val socket = new Socket
@@ -54,8 +50,8 @@ package object messaging {
     def sendMessage(message: Message): Future[Unit] = Future {
       stream.synchronized {
         stream.write(message.messageType.id)
-        stream.write(intToByte(message.length))
         stream.write(message.data)
+        stream.flush()
       }
     }
   }
@@ -65,6 +61,8 @@ package object messaging {
   }
 
   class MessageListener(bindAddress: InetSocketAddress) {
+    val logger = Logger("Listener")
+
     /*
     http://zeroit.tistory.com/236
     Java non-blocking socket I/O
@@ -121,12 +119,10 @@ package object messaging {
     private def read(key: SelectionKey) = {
       key.channel match {
         case socketChannel: SocketChannel =>
-          val buffer = ByteBuffer.allocateDirect(Setting.BufferSize).order(Setting.ByteOrder)
+          val buffer = ByteBuffer.allocateDirect(Setting.BufferSize)
           val readedBytes = socketChannel.read(buffer)
-          readMessageFrom(buffer, readedBytes) match {
-            case Some(message) => messageHandler.handleMessage(message)
-            case _ => ()
-          }
+          buffer.flip()
+          messageHandler.handleMessage(readMessageFrom(buffer, readedBytes))
           buffer.clear
       }
     }
@@ -136,14 +132,11 @@ package object messaging {
       socketChannel.register(selector, SelectionKey.OP_READ)
     }
 
-    private def readMessageFrom(buffer: ByteBuffer, messageLength: Integer) = {
+    private def readMessageFrom(buffer: ByteBuffer, readedBytes: Integer) = {
       val messageType = MessageType(buffer.get())
-      val dataLength = buffer.getInt()
-      if (messageLength == buffer.position + dataLength) {
-        val data = new Array[Byte](dataLength)
-        buffer.get(data)
-        Some(new Message(messageType, data))
-      } else None
+      val data = new Array[Byte](readedBytes-1)
+      buffer.get(data)
+      new Message(messageType, data)
     }
   }
 }

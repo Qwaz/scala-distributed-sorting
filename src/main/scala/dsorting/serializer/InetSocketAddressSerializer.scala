@@ -7,8 +7,9 @@ object InetSocketAddressSerializer extends Serializer[InetSocketAddress] {
   override def toByteArray(target: InetSocketAddress): Array[Byte] = {
     val byteStream = new ByteArrayOutputStream()
     val objectStream = new ObjectOutputStream(byteStream)
-    objectStream.writeUTF(target.getHostString)
+    objectStream.writeUTF(target.getAddress.getHostAddress)
     objectStream.writeInt(target.getPort)
+    objectStream.flush()
     byteStream.toByteArray
   }
 

@@ -8,6 +8,8 @@ package object primitive {
   type Key = Array[Byte]
   type Value = Array[Byte]
 
+  def emptyKey = new Array[Byte](10)
+
   class IODirectoryInfo(val inputFiles: List[String], val outputDirectory: String) {
     require(inputFiles.nonEmpty)
   }

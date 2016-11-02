@@ -13,7 +13,7 @@ object KeyListSerializer extends Serializer[List[Key]] {
     def readKey(stream: ByteArrayInputStream, pos: Integer, now: List[Key]): List[Key] = {
       if (stream.available() <= pos) now
       else {
-        val newKey = Array[Byte](10)
+        val newKey = emptyKey
         stream.read(newKey, pos, 10)
         readKey(stream, pos+10, newKey :: now)
       }

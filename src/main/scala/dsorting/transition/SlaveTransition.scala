@@ -4,6 +4,7 @@ import java.net.{InetAddress, InetSocketAddress, URI, URISyntaxException}
 import java.util
 import java.util.Collections
 
+import com.typesafe.scalalogging.Logger
 import dsorting.common.Setting
 import dsorting.common.future.Subscription
 import dsorting.common.messaging._
@@ -15,6 +16,8 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Future, Promise}
 
 package object slave {
+  val logger = Logger("Slave")
+
   def parseArgument(args: Array[String]): Future[SlaveStartupInfo] = Future {
     def inetSocketAddressFromString(str: String): InetSocketAddress = {
       /*
@@ -41,7 +44,9 @@ package object slave {
 
   def prepareSampling(slaveStartupInfo: SlaveStartupInfo): SamplingState = {
     new SamplingState {
-      val selfAddress = new InetSocketAddress(InetAddress.getLocalHost, Setting.SlavePort)
+      val selfAddress = new InetSocketAddress(InetAddress.getLocalHost.getHostAddress, Setting.SlavePort)
+      logger.debug(s"Self Address: $selfAddress")
+      logger.debug(s"Master Address: ${slaveStartupInfo.masterAddress}")
 
       val listener = new MessageListener(selfAddress)
       val serverSubscription: Subscription = listener.startServer
@@ -51,6 +56,8 @@ package object slave {
       val ioDirectoryInfo = slaveStartupInfo.ioDirectoryInfo
 
       def run() = {
+        logger.info("Sampling: run()")
+
         val p = Promise[PartitionTable]()
         listener.replaceHandler(new MessageHandler {
           def handleMessage(message: Message): Future[Unit] = Future {
@@ -86,6 +93,8 @@ package object slave {
           KeyListSerializer.toByteArray(first :: second :: Nil)
         ))
       }
+
+      logger.info("Sampling: Initialized")
     }
   }
 }
