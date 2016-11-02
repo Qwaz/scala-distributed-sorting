@@ -121,7 +121,9 @@ package object messaging {
           val buffer = ByteBuffer.allocateDirect(Setting.BufferSize)
           val readBytes = socketChannel.read(buffer)
           buffer.flip()
-          messageHandler.handleMessage(readMessageFrom(buffer, readBytes))
+          messageHandler.handleMessage(readMessageFrom(buffer, readBytes)) onFailure {
+            case e => logger.error("handleMessage failed", e)
+          }
           buffer.clear
       }
     }
