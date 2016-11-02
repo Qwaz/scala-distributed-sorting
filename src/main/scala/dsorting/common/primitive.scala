@@ -2,6 +2,8 @@ package dsorting.common
 
 import java.net.InetSocketAddress
 
+import scala.concurrent.Future
+
 package object primitive {
   type Key = Array[Byte]
   type Value = Array[Byte]
@@ -17,11 +19,12 @@ package object primitive {
   abstract class Identity
   case object Master extends Identity
   case class Slave(index: Integer) extends Identity
-  case object UnknownSlave extends Identity
 
   class SlaveRange(val slave: InetSocketAddress, startKey: Key)
 
-  class PartitionTable(val identity: Identity, val master: InetSocketAddress, val slaves: Vector[SlaveRange]) {
-    def this(identity: Identity, master: InetSocketAddress) = this(identity, master, Vector())
+  class PartitionTable(val identity: Identity, val masterAddress: InetSocketAddress, val slaveRanges: IndexedSeq[SlaveRange])
+
+  trait State[T] {
+    def run(): Future[T]
   }
 }

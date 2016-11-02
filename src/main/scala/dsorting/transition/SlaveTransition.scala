@@ -1,12 +1,18 @@
 package dsorting.transition
 
-import java.net.{InetSocketAddress, URI, URISyntaxException}
+import java.net.{InetAddress, InetSocketAddress, URI, URISyntaxException}
+import java.util
+import java.util.Collections
 
+import dsorting.common.Setting
+import dsorting.common.future.Subscription
+import dsorting.common.messaging._
 import dsorting.common.primitive._
+import dsorting.serializer.{InetSocketAddressSerializer, KeyListSerializer}
 import dsorting.states.slave._
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import scala.concurrent.{Future, Promise}
 
 package object slave {
   def parseArgument(args: Array[String]): Future[SlaveStartupInfo] = Future {
@@ -33,7 +39,53 @@ package object slave {
       new SlaveStartupInfo(inetSocketAddressFromString(args(0)), new IODirectoryInfo(args.slice(indexI+1, indexO).toList, args(indexO+1)))
   }
 
-  def initializeState(slaveStartupInfo: SlaveStartupInfo): Future[SamplingState] = Future {
-    new SamplingState(slaveStartupInfo)
+  def prepareSampling(slaveStartupInfo: SlaveStartupInfo): SamplingState = {
+    new SamplingState {
+      val selfAddress = new InetSocketAddress(InetAddress.getLocalHost, Setting.SlavePort)
+
+      val listener = new MessageListener(selfAddress)
+      val serverSubscription: Subscription = listener.startServer
+
+      val channelToMaster = new Channel(Master, slaveStartupInfo.masterAddress)
+
+      val ioDirectoryInfo = slaveStartupInfo.ioDirectoryInfo
+
+      def run() = {
+        val p = Promise[PartitionTable]()
+        listener.replaceHandler(new MessageHandler {
+          def handleMessage(message: Message): Future[Unit] = Future {
+            message.messageType match {
+              case MessageType.PartitionData =>
+                // TODO: transit to the next state
+                ()
+            }
+          }
+        })
+        introduce()
+        performSampling()
+        p.future
+      }
+
+      private def introduce() = {
+        channelToMaster.sendMessage(new Message(
+          MessageType.Introduce,
+          InetSocketAddressSerializer.toByteArray(selfAddress)
+        ))
+      }
+
+      private def performSampling() = {
+        // TODO: change to real sampling
+        val first = Array[Byte](0, 1, 2, 3, 4, 5, 6, 7, 8, 9)
+        val second = Array[Byte](0, 1, 2, 3, 4, 5, 6, 7, 8, 9)
+
+        Collections.shuffle(util.Arrays.asList(first))
+        Collections.shuffle(util.Arrays.asList(second))
+
+        channelToMaster.sendMessage(new Message(
+          MessageType.SampleData,
+          KeyListSerializer.toByteArray(first :: second :: Nil)
+        ))
+      }
+    }
   }
 }

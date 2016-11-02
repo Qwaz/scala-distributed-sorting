@@ -1,12 +1,18 @@
 package dsorting.states.master
 
-import java.net.{InetAddress, InetSocketAddress}
-
-import dsorting.common.Setting
+import dsorting.common.future.Subscription
+import dsorting.common.messaging._
 import dsorting.common.primitive._
 
-class SamplingState(val numSlaves: Integer) {
-  private val masterAddress = new InetSocketAddress(InetAddress.getLocalHost, Setting.MasterPort)
+trait MasterState[T] extends State[T] {
+  val listener: MessageListener
+  val serverSubscription: Subscription
 
-  val partitionTable = new PartitionTable(Master, masterAddress)
+  val numSlaves: Integer
+}
+
+trait SamplingState extends MasterState[PartitionTable]
+
+trait PartitioningState extends MasterState[Unit] {
+  val partitionTable: PartitionTable
 }
