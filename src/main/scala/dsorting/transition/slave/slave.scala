@@ -9,15 +9,13 @@ import dsorting.common.Setting
 import dsorting.common.future.Subscription
 import dsorting.common.messaging._
 import dsorting.common.primitive._
-import dsorting.serializer.{InetSocketAddressSerializer, KeyListSerializer, PartitionTableSerializer}
+import dsorting.serializer._
 import dsorting.states.slave._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Future, Promise}
 
 package object slave {
-  val logger = Logger("Slave")
-
   def parseArgument(args: Array[String]): Future[SlaveStartupInfo] = Future {
     def inetSocketAddressFromString(str: String): InetSocketAddress = {
       /*
@@ -44,9 +42,11 @@ package object slave {
 
   def prepareSampling(slaveStartupInfo: SlaveStartupInfo): SamplingState = {
     new SamplingState {
+      val logger = Logger("Slave Sampling")
+
       val selfAddress = new InetSocketAddress(InetAddress.getLocalHost.getHostAddress, Setting.SlavePort)
-      logger.debug(s"Self Address: $selfAddress")
-      logger.debug(s"Master Address: ${slaveStartupInfo.masterAddress}")
+      logger.debug(s"self address: $selfAddress")
+      logger.debug(s"master address: ${slaveStartupInfo.masterAddress}")
 
       val listener = new MessageListener(selfAddress)
       val serverSubscription: Subscription = listener.startServer
@@ -56,14 +56,14 @@ package object slave {
       val ioDirectoryInfo = slaveStartupInfo.ioDirectoryInfo
 
       def run() = {
-        logger.info("Sampling: run()")
+        logger.info("start running")
 
         val p = Promise[PartitionTable]()
 
         def receivePartitionData(data: Array[Byte]) = {
           val partitionTable = PartitionTableSerializer.fromByteArray(data)
           p.success(partitionTable)
-          logger.debug(s"Partition Table received - ${partitionTable.identity}")
+          logger.debug(s"partition table received: ${partitionTable.identity}")
         }
 
         listener.replaceHandler(new MessageHandler {
@@ -101,13 +101,15 @@ package object slave {
         ))
       }
 
-      logger.info("Sampling: Initialized")
+      logger.info("initialized")
     }
   }
 
   def preparePartitioning(prevState: SamplingState)(partitionTable: PartitionTable): PartitioningState = {
     val _partitionTable = partitionTable
     new PartitioningState {
+      val logger = Logger("Slave Partitioning")
+
       val selfAddress = prevState.selfAddress
       val listener = prevState.listener
       val serverSubscription = prevState.serverSubscription
@@ -120,13 +122,13 @@ package object slave {
       val channelTable = ChannelTable.fromPartitionTable(partitionTable)
 
       def run() = {
-        logger.info("Partitioning: run()")
+        logger.info("start running")
 
         val p = Promise[Unit]()
 
         def receivePartitionComplete(data: Array[Byte]) = {
           p.success(())
-          logger.debug(s"Partitioning complete")
+          logger.debug(s"partitioning complete")
         }
 
         listener.replaceHandler(new MessageHandler {
@@ -144,6 +146,8 @@ package object slave {
       private def sendOkData() = {
         channelToMaster.sendMessage(Message.withType(MessageType.PartitionOk))
       }
+
+      logger.info("initialized")
     }
   }
 }

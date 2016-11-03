@@ -12,6 +12,13 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 package object messaging {
+  def messagingLogging(log: String) = {
+    if (Setting.MessageLoggingEnabled) {
+      val messageLogger = Logger("Messaging")
+      messageLogger.debug(log)
+    }
+  }
+
   object MessageType extends Enumeration {
     /*
      MessageType is serialized to one byte, so the number of values should be less than 256.
@@ -60,7 +67,7 @@ package object messaging {
       stream.synchronized {
         stream.write(message.messageType.id)
         stream.write(message.data)
-        Logger("Channel").debug(s"Sent ${message.data.length + 1} bytes")
+        messagingLogging(s"Sent ${message.data.length + 1} bytes")
         stream.flush()
       }
     }
@@ -92,8 +99,6 @@ package object messaging {
   }
 
   class MessageListener(bindAddress: InetSocketAddress) {
-    val logger = Logger("Listener")
-
     /*
     http://zeroit.tistory.com/236
     Java non-blocking socket I/O
@@ -152,7 +157,7 @@ package object messaging {
         case socketChannel: SocketChannel =>
           val buffer = ByteBuffer.allocateDirect(Setting.BufferSize)
           val readBytes = socketChannel.read(buffer)
-          logger.debug(s"Read $readBytes bytes")
+          messagingLogging(s"Read $readBytes bytes")
           buffer.flip()
           messageHandler.handleMessage(readMessageFrom(buffer, readBytes))
           buffer.clear
@@ -166,7 +171,6 @@ package object messaging {
 
     private def readMessageFrom(buffer: ByteBuffer, readBytes: Integer) = {
       val messageType = MessageType(buffer.get())
-      logger.debug(s"Message Type $messageType")
       val data = new Array[Byte](readBytes-1)
       buffer.get(data)
       new Message(messageType, data)

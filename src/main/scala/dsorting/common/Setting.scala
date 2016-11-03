@@ -31,6 +31,8 @@ object Setting {
     else nextAvailablePort(port+1)
   }
 
+  val MessageLoggingEnabled = false
+
   def MasterPort = nextAvailablePort(25252)
   def SlavePort = nextAvailablePort(3939)
 

@@ -16,8 +16,6 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Future, Promise}
 
 package object master {
-  val logger = Logger("Master")
-
   def parseArgument(args: Array[String]): Future[Integer] = Future {
     if (args.length != 1) throw new IllegalArgumentException("Argument size must be 1")
     args(0).toInt
@@ -26,8 +24,10 @@ package object master {
   def prepareSampling(numSlaves: Integer): SamplingState = {
     val _numSlaves = numSlaves
     new SamplingState {
+      val logger = Logger("Master Sampling")
+
       private val masterAddress = new InetSocketAddress(InetAddress.getLocalHost.getHostAddress, Setting.MasterPort)
-      logger.debug(s"Master Address: $masterAddress")
+      logger.debug(s"master address: $masterAddress")
 
       val listener = new MessageListener(masterAddress)
       val serverSubscription: Subscription = listener.startServer
@@ -40,21 +40,21 @@ package object master {
       private val sampleKeys = ArrayBuffer[Key]()
 
       def run() = {
-        logger.info("Sampling: run()")
+        logger.info("start running")
 
         val p = Promise[PartitionTable]()
 
         def receiveIntroduce(data: Array[Byte]) = {
           val slaveAddress = InetSocketAddressSerializer.fromByteArray(data)
           slaveAddresses += slaveAddress
-          logger.debug(s"Introduce data received from $slaveAddress")
+          logger.debug(s"introduce data received from $slaveAddress")
         }
 
         def receiveSampleData(data: Array[Byte]) = {
           sampleKeys ++= KeyListSerializer.fromByteArray(data)
           remainingSlaves -= 1
           if (remainingSlaves == 0) p.success(createPartitionTable())
-          logger.debug(s"Sample data received - remaining slaves $remainingSlaves")
+          logger.debug(s"sample data received: $remainingSlaves remains")
         }
 
         listener.replaceHandler(new MessageHandler {
@@ -77,13 +77,15 @@ package object master {
         new PartitionTable(Master, slaveRanges.toVector)
       }
 
-      logger.info("Sampling: Initialized")
+      logger.info("initialized")
     }
   }
 
   def preparePartitioning(prevState: SamplingState)(partitionTable: PartitionTable): PartitioningState = {
     val _partitionTable = partitionTable
     new PartitioningState {
+      val logger = Logger("Master Partitioning")
+
       val listener = prevState.listener
       val serverSubscription: Subscription = prevState.serverSubscription
 
@@ -95,7 +97,7 @@ package object master {
       private var remainingSlaves = numSlaves
 
       def run() = {
-        logger.info("Partitioning: run()")
+        logger.info("start running")
 
         val p = Promise[Unit]()
 
@@ -105,7 +107,7 @@ package object master {
             channelTable.broadcast(Message.withType(MessageType.PartitionComplete))
             p.success(())
           }
-          logger.debug(s"Partition OK received - remaining slaves $remainingSlaves")
+          logger.debug(s"partitioning ok received: $remainingSlaves remains")
         }
 
         listener.replaceHandler(new MessageHandler {
@@ -132,7 +134,7 @@ package object master {
         }
       }
 
-      logger.info("Partitioning: Initialized")
+      logger.info("initialized")
     }
   }
 }
