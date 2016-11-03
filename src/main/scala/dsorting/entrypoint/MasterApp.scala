@@ -12,7 +12,10 @@ object MasterApp extends App {
   parseArgument(args) -> prepareSampling -> {
     samplingState =>
       samplingState.run() -> preparePartitioning(samplingState) -> {
-        _ => p.success(())
+        partitioningState =>
+          partitioningState.run() -> {
+            _ => p.success(())
+          } onFailure { case e => p.tryFailure(e) }
       } onFailure { case e => p.tryFailure(e) }
   } onFailure { case e => p.tryFailure(e) }
   Await.result(p.future, Duration.Inf)

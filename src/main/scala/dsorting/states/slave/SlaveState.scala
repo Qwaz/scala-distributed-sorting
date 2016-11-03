@@ -21,4 +21,5 @@ trait SamplingState extends SlaveState[PartitionTable]
 
 trait PartitioningState extends SlaveState[Unit] {
   val partitionTable: PartitionTable
+  val channelTable: ChannelTable
 }

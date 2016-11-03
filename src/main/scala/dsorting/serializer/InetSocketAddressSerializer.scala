@@ -9,7 +9,10 @@ object InetSocketAddressSerializer extends Serializer[InetSocketAddress] {
     val objectStream = new ObjectOutputStream(byteStream)
     objectStream.writeUTF(target.getAddress.getHostAddress)
     objectStream.writeInt(target.getPort)
-    objectStream.flush()
+
+    objectStream.close()
+    byteStream.close()
+
     byteStream.toByteArray
   }
 
@@ -19,6 +22,9 @@ object InetSocketAddressSerializer extends Serializer[InetSocketAddress] {
 
     val host = objectStream.readUTF()
     val port = objectStream.readInt()
+
+    objectStream.close()
+    byteStream.close()
 
     new InetSocketAddress(host, port)
   }

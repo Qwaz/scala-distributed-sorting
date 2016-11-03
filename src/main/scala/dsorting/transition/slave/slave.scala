@@ -9,7 +9,7 @@ import dsorting.common.Setting
 import dsorting.common.future.Subscription
 import dsorting.common.messaging._
 import dsorting.common.primitive._
-import dsorting.serializer.{InetSocketAddressSerializer, KeyListSerializer}
+import dsorting.serializer.{InetSocketAddressSerializer, KeyListSerializer, PartitionTableSerializer}
 import dsorting.states.slave._
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -59,17 +59,24 @@ package object slave {
         logger.info("Sampling: run()")
 
         val p = Promise[PartitionTable]()
+
+        def receivePartitionData(data: Array[Byte]) = {
+          val partitionTable = PartitionTableSerializer.fromByteArray(data)
+          p.success(partitionTable)
+          logger.debug(s"Partition Table received - ${partitionTable.identity}")
+        }
+
         listener.replaceHandler(new MessageHandler {
-          def handleMessage(message: Message): Future[Unit] = Future {
+          def handleMessage(message: Message): Unit = {
             message.messageType match {
-              case MessageType.PartitionData =>
-                // TODO: transit to the next state
-                ()
+              case MessageType.PartitionData => receivePartitionData(message.data)
             }
           }
         })
+
         introduce()
         performSampling()
+
         p.future
       }
 
@@ -90,11 +97,53 @@ package object slave {
 
         channelToMaster.sendMessage(new Message(
           MessageType.SampleData,
-          KeyListSerializer.toByteArray(first :: second :: Nil)
+          KeyListSerializer.toByteArray(Key(first) :: Key(second) :: Nil)
         ))
       }
 
       logger.info("Sampling: Initialized")
+    }
+  }
+
+  def preparePartitioning(prevState: SamplingState)(partitionTable: PartitionTable): PartitioningState = {
+    val _partitionTable = partitionTable
+    new PartitioningState {
+      val selfAddress = prevState.selfAddress
+      val listener = prevState.listener
+      val serverSubscription = prevState.serverSubscription
+
+      val channelToMaster = prevState.channelToMaster
+
+      val ioDirectoryInfo = prevState.ioDirectoryInfo
+
+      val partitionTable = _partitionTable
+      val channelTable = ChannelTable.fromPartitionTable(partitionTable)
+
+      def run() = {
+        logger.info("Partitioning: run()")
+
+        val p = Promise[Unit]()
+
+        def receivePartitionComplete(data: Array[Byte]) = {
+          p.success(())
+          logger.debug(s"Partitioning complete")
+        }
+
+        listener.replaceHandler(new MessageHandler {
+          def handleMessage(message: Message): Unit = message.messageType match {
+            case MessageType.PartitionComplete => receivePartitionComplete(message.data)
+            case _ => ()
+          }
+        })
+
+        sendOkData()
+
+        p.future
+      }
+
+      private def sendOkData() = {
+        channelToMaster.sendMessage(Message.withType(MessageType.PartitionOk))
+      }
     }
   }
 }

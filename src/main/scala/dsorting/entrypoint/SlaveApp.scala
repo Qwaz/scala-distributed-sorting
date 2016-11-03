@@ -11,8 +11,11 @@ object SlaveApp extends App {
   val p = Promise[Unit]()
   parseArgument(args) -> prepareSampling -> {
     samplingState =>
-      samplingState.run() -> {
-        _ => p.success(())
+      samplingState.run() -> preparePartitioning(samplingState) -> {
+        partitioningState =>
+          partitioningState.run() -> {
+            _ => p.success(())
+          } onFailure { case e => p.tryFailure(e) }
       } onFailure { case e => p.tryFailure(e) }
   } onFailure { case e => p.tryFailure(e) }
   Await.result(p.future, Duration.Inf)

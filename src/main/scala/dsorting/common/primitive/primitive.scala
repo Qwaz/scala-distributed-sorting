@@ -5,10 +5,24 @@ import java.net.InetSocketAddress
 import scala.concurrent.Future
 
 package object primitive {
-  type Key = Array[Byte]
-  type Value = Array[Byte]
+  class Key(val bytes: Array[Byte])
+  class Value(val bytes: Array[Byte])
 
-  def emptyKey = new Array[Byte](10)
+  object Key {
+    def apply(bytes: Array[Byte]) = {
+      require(bytes.length == 10)
+      new Key(bytes)
+    }
+  }
+
+  object Value {
+    def apply(bytes: Array[Byte]) = {
+      require(bytes.length == 90)
+      new Key(bytes)
+    }
+  }
+
+  def emptyKeyBuffer = new Array[Byte](10)
 
   class IODirectoryInfo(val inputFiles: List[String], val outputDirectory: String) {
     require(inputFiles.nonEmpty)
@@ -21,10 +35,6 @@ package object primitive {
   abstract class Identity
   case object Master extends Identity
   case class Slave(index: Integer) extends Identity
-
-  class SlaveRange(val slave: InetSocketAddress, startKey: Key)
-
-  class PartitionTable(val identity: Identity, val masterAddress: InetSocketAddress, val slaveRanges: IndexedSeq[SlaveRange])
 
   trait State[T] {
     def run(): Future[T]

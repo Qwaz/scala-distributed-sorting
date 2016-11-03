@@ -15,4 +15,5 @@ trait SamplingState extends MasterState[PartitionTable]
 
 trait PartitioningState extends MasterState[Unit] {
   val partitionTable: PartitionTable
+  val channelTable: ChannelTable
 }

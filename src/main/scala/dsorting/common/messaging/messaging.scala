@@ -39,7 +39,17 @@ package object messaging {
     val SortingComplete = Value
   }
 
-  class Message(val messageType: MessageType.MessageType, val data: Array[Byte])
+  class Message(val messageType: MessageType.MessageType, val data: Array[Byte]) {
+    override def toString = {
+      s"$messageType - $data"
+    }
+  }
+
+  object Message {
+    def withType(messageType: MessageType.MessageType) = {
+      new Message(messageType, Array[Byte]())
+    }
+  }
 
   class Channel(val identity: Identity, address: SocketAddress) {
     private val socket = new Socket
@@ -50,13 +60,35 @@ package object messaging {
       stream.synchronized {
         stream.write(message.messageType.id)
         stream.write(message.data)
+        Logger("Channel").debug(s"Sent ${message.data.length + 1} bytes")
         stream.flush()
       }
     }
   }
 
+  class SlaveRange(val slave: InetSocketAddress, val startKey: Key)
+
+  class PartitionTable(val identity: Identity, val slaveRanges: IndexedSeq[SlaveRange])
+
+  class ChannelTable(val channels: IndexedSeq[Channel]) {
+    def apply(index: Integer) = channels(index)
+
+    def broadcast(message: Message) = {
+      channels.foreach { channel => channel.sendMessage(message) }
+    }
+  }
+
+  object ChannelTable {
+    def fromPartitionTable(partitionTable: PartitionTable) = {
+      val channels = partitionTable.slaveRanges.zipWithIndex.map {
+        case (slaveRange, i) => new Channel(Slave(i), slaveRange.slave)
+      }
+      new ChannelTable(channels)
+    }
+  }
+
   trait MessageHandler {
-    def handleMessage(message: Message): Future[Unit]
+    def handleMessage(message: Message): Unit
   }
 
   class MessageListener(bindAddress: InetSocketAddress) {
@@ -74,7 +106,7 @@ package object messaging {
     socket.bind(bindAddress)
 
     private var messageHandler: MessageHandler = new MessageHandler {
-      def handleMessage(message: Message) = Future {
+      def handleMessage(message: Message) = {
         ()
       }
     }
@@ -120,10 +152,9 @@ package object messaging {
         case socketChannel: SocketChannel =>
           val buffer = ByteBuffer.allocateDirect(Setting.BufferSize)
           val readBytes = socketChannel.read(buffer)
+          logger.debug(s"Read $readBytes bytes")
           buffer.flip()
-          messageHandler.handleMessage(readMessageFrom(buffer, readBytes)) onFailure {
-            case e => logger.error("handleMessage failed", e)
-          }
+          messageHandler.handleMessage(readMessageFrom(buffer, readBytes))
           buffer.clear
       }
     }
@@ -135,6 +166,7 @@ package object messaging {
 
     private def readMessageFrom(buffer: ByteBuffer, readBytes: Integer) = {
       val messageType = MessageType(buffer.get())
+      logger.debug(s"Message Type $messageType")
       val data = new Array[Byte](readBytes-1)
       buffer.get(data)
       new Message(messageType, data)

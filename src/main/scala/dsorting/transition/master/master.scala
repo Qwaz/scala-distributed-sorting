@@ -36,39 +36,45 @@ package object master {
 
       private var remainingSlaves = numSlaves
 
-      private val slaveList = new ArrayBuffer[InetSocketAddress]()
-      private val sampleKeys = new ArrayBuffer[Key]()
+      private val slaveAddresses = ArrayBuffer[InetSocketAddress]()
+      private val sampleKeys = ArrayBuffer[Key]()
 
       def run() = {
         logger.info("Sampling: run()")
 
         val p = Promise[PartitionTable]()
+
+        def receiveIntroduce(data: Array[Byte]) = {
+          val slaveAddress = InetSocketAddressSerializer.fromByteArray(data)
+          slaveAddresses += slaveAddress
+          logger.debug(s"Introduce data received from $slaveAddress")
+        }
+
+        def receiveSampleData(data: Array[Byte]) = {
+          sampleKeys ++= KeyListSerializer.fromByteArray(data)
+          remainingSlaves -= 1
+          if (remainingSlaves == 0) p.success(createPartitionTable())
+          logger.debug(s"Sample data received - remaining slaves $remainingSlaves")
+        }
+
         listener.replaceHandler(new MessageHandler {
-          def handleMessage(message: Message): Future[Unit] = Future {
-            message.messageType match {
-              case MessageType.Introduce =>
-                val slaveAddress = InetSocketAddressSerializer.fromByteArray(message.data)
-                slaveList += slaveAddress
-                logger.debug(s"Introduce data received from $slaveAddress")
-              case MessageType.SampleData =>
-                sampleKeys ++= KeyListSerializer.fromByteArray(message.data)
-                remainingSlaves -= 1
-                if (remainingSlaves == 0) p.success(createPartitionTable())
-                logger.debug(s"Sample data received - remaining slaves $remainingSlaves")
-              case _ => ()
-            }
+          def handleMessage(message: Message): Unit = message.messageType match {
+            case MessageType.Introduce => receiveIntroduce(message.data)
+            case MessageType.SampleData => receiveSampleData(message.data)
+            case _ => ()
           }
         })
+
         p.future
       }
 
       private def createPartitionTable() = {
-        val sortedKeys = sampleKeys.sortBy(key => new String(key, Charset.forName("US-ASCII")))
+        val sortedKeys = sampleKeys.sortBy(key => new String(key.bytes, Charset.forName("US-ASCII")))
         val step = sortedKeys.length / numSlaves
-        val slaveRanges = slaveList.zipWithIndex.map {
+        val slaveRanges = slaveAddresses.zipWithIndex.map {
           case (socketAddress, i) => new SlaveRange(socketAddress, sortedKeys(i*step))
         }
-        new PartitionTable(Master, masterAddress, slaveRanges.toVector)
+        new PartitionTable(Master, slaveRanges.toVector)
       }
 
       logger.info("Sampling: Initialized")
@@ -84,18 +90,46 @@ package object master {
       val numSlaves = prevState.numSlaves
 
       val partitionTable = _partitionTable
+      val channelTable = ChannelTable.fromPartitionTable(partitionTable)
+
+      private var remainingSlaves = numSlaves
 
       def run() = {
         logger.info("Partitioning: run()")
 
         val p = Promise[Unit]()
+
+        def receivePartitionOk(data: Array[Byte]) = {
+          remainingSlaves -= 1
+          if (remainingSlaves == 0) {
+            channelTable.broadcast(Message.withType(MessageType.PartitionComplete))
+            p.success(())
+          }
+          logger.debug(s"Partition OK received - remaining slaves $remainingSlaves")
+        }
+
         listener.replaceHandler(new MessageHandler {
-          def handleMessage(message: Message): Future[Unit] = Future {
-            ()
+          def handleMessage(message: Message): Unit =  message.messageType match {
+            case MessageType.PartitionOk => receivePartitionOk(message.data)
+            case _ => ()
           }
         })
-        // TODO: send serialized partition table
+
+        broadcastPartitionTable()
+
         p.future
+      }
+
+      private def broadcastPartitionTable() = {
+        channelTable.channels.zipWithIndex.foreach {
+          case (channel, i) =>
+            channel.sendMessage(new Message(
+              MessageType.PartitionData,
+              PartitionTableSerializer.toByteArray(
+                new PartitionTable(Slave(i), partitionTable.slaveRanges)
+              )
+            ))
+        }
       }
 
       logger.info("Partitioning: Initialized")
