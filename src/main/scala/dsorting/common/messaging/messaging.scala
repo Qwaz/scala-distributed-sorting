@@ -73,10 +73,6 @@ package object messaging {
     }
   }
 
-  class SlaveRange(val slave: InetSocketAddress, val startKey: Key)
-
-  class PartitionTable(val identity: Identity, val slaveRanges: IndexedSeq[SlaveRange])
-
   class ChannelTable(val channels: IndexedSeq[Channel]) {
     def apply(index: Integer) = channels(index)
 

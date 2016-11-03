@@ -36,6 +36,10 @@ package object primitive {
   case object Master extends Identity
   case class Slave(index: Integer) extends Identity
 
+  class SlaveRange(val slave: InetSocketAddress, val startKey: Key)
+
+  class PartitionTable(val identity: Identity, val slaveRanges: IndexedSeq[SlaveRange])
+
   trait State[T] {
     def run(): Future[T]
   }
