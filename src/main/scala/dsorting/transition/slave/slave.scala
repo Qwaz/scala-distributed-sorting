@@ -63,7 +63,7 @@ package object slave {
         def receivePartitionData(data: Array[Byte]) = {
           val partitionTable = PartitionTableSerializer.fromByteArray(data)
           p.success(partitionTable)
-          logger.debug(s"partition table received: $partitionTable")
+          logger.debug(partitionTable.toString)
         }
 
         listener.replaceHandler(new MessageHandler {
@@ -90,7 +90,7 @@ package object slave {
       private def performSampling() = {
         // TODO: change to real sampling
         val first = Array[Byte](0, 1, 2, 3, 4, 5, 6, 7, 8, 9)
-        val second = Array[Byte](0, 1, 2, 3, 4, 5, 6, 7, 8, 9)
+        val second = Array[Byte](9, 8, 7, 6, 5, 4, 3, 2, 1, 0)
 
         Collections.shuffle(util.Arrays.asList(first))
         Collections.shuffle(util.Arrays.asList(second))
