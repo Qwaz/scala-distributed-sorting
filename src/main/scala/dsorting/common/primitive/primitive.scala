@@ -1,12 +1,18 @@
 package dsorting.common
 
 import java.net.InetSocketAddress
+import javax.xml.bind.DatatypeConverter
 
 import scala.concurrent.Future
 
 package object primitive {
-  class Key(val bytes: Array[Byte])
-  class Value(val bytes: Array[Byte])
+  class Key(val bytes: Array[Byte]) {
+    override def toString: String = DatatypeConverter.printHexBinary(bytes)
+  }
+
+  class Value(val bytes: Array[Byte]) {
+    override def toString: String = DatatypeConverter.printHexBinary(bytes)
+  }
 
   object Key {
     def apply(bytes: Array[Byte]) = {
@@ -33,12 +39,28 @@ package object primitive {
   case class Entity(key: Key, value: Value)
 
   abstract class Identity
-  case object Master extends Identity
-  case class Slave(index: Integer) extends Identity
+  case object Master extends Identity {
+    override def toString: String = "Master"
+  }
+  case class Slave(index: Integer) extends Identity {
+    override def toString: String = s"Slave $index"
+  }
 
-  class SlaveRange(val slave: InetSocketAddress, val startKey: Key)
+  class SlaveRange(val slave: InetSocketAddress, val startKey: Key) {
+    override def toString: String = {
+      s"Address: $slave / startKey: $startKey"
+    }
+  }
 
-  class PartitionTable(val identity: Identity, val slaveRanges: IndexedSeq[SlaveRange])
+  class PartitionTable(val identity: Identity, val slaveRanges: IndexedSeq[SlaveRange]) {
+    override def toString: String = {
+      var str = s"PartitionTable of $identity"
+        for (slaveRange <- slaveRanges) {
+        str = str + s"\n $slaveRange"
+      }
+      str
+    }
+  }
 
   trait State[T] {
     def run(): Future[T]

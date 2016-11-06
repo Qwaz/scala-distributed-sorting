@@ -33,6 +33,7 @@ package object master {
       val serverSubscription: Subscription = listener.startServer
 
       val numSlaves = _numSlaves
+      logger.debug(s"numSlaves $numSlaves")
 
       private var remainingSlaves = numSlaves
 
@@ -92,6 +93,7 @@ package object master {
       val numSlaves = prevState.numSlaves
 
       val partitionTable = _partitionTable
+      logger.debug(partitionTable.toString)
       val channelTable = ChannelTable.fromPartitionTable(partitionTable)
 
       private var remainingSlaves = numSlaves

@@ -63,7 +63,7 @@ package object slave {
         def receivePartitionData(data: Array[Byte]) = {
           val partitionTable = PartitionTableSerializer.fromByteArray(data)
           p.success(partitionTable)
-          logger.debug(s"partition table received: ${partitionTable.identity}")
+          logger.debug(s"partition table received: $partitionTable")
         }
 
         listener.replaceHandler(new MessageHandler {

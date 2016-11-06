@@ -1,5 +1,6 @@
 package dsorting.common
 
+import java.io.DataOutputStream
 import java.net.{InetSocketAddress, Socket, SocketAddress}
 import java.nio.ByteBuffer
 import java.nio.channels.{SelectionKey, Selector, ServerSocketChannel, SocketChannel}
@@ -61,11 +62,11 @@ package object messaging {
   class Channel(val identity: Identity, address: SocketAddress) {
     private val socket = new Socket
     socket.connect(address)
-    private val stream = socket.getOutputStream
+    private val stream = new DataOutputStream(socket.getOutputStream)
 
     def sendMessage(message: Message): Future[Unit] = Future {
       stream.synchronized {
-        stream.write(message.messageType.id)
+        stream.writeByte(message.messageType.id)
         stream.write(message.data)
         messagingLogging(s"Sent ${message.data.length + 1} bytes")
         stream.flush()
@@ -84,7 +85,8 @@ package object messaging {
   object ChannelTable {
     def fromPartitionTable(partitionTable: PartitionTable) = {
       val channels = partitionTable.slaveRanges.zipWithIndex.map {
-        case (slaveRange, i) => new Channel(Slave(i), slaveRange.slave)
+        case (slaveRange, i) =>
+          new Channel(Slave(i), slaveRange.slave)
       }
       new ChannelTable(channels)
     }
@@ -129,7 +131,8 @@ package object messaging {
               val key = it.next
               if (key.isAcceptable) {
                 accept(key)
-              } else if (key.isReadable) {
+              }
+              if (key.isReadable) {
                 read(key)
               }
               it.remove()
@@ -144,7 +147,8 @@ package object messaging {
       key.channel match {
         case server: ServerSocketChannel =>
           val socketChannel = server.accept
-          registerChannel(selector, socketChannel)
+          socketChannel.configureBlocking(false)
+          socketChannel.register(selector, SelectionKey.OP_READ)
       }
     }
 
@@ -153,16 +157,14 @@ package object messaging {
         case socketChannel: SocketChannel =>
           val buffer = ByteBuffer.allocateDirect(Setting.BufferSize)
           val readBytes = socketChannel.read(buffer)
-          messagingLogging(s"Read $readBytes bytes")
-          buffer.flip()
-          messageHandler.handleMessage(readMessageFrom(buffer, readBytes))
-          buffer.clear
+          if (readBytes == -1) {
+            socketChannel.close()
+          } else {
+            messagingLogging(s"Read $readBytes bytes")
+            buffer.flip()
+            messageHandler.handleMessage(readMessageFrom(buffer, readBytes))
+          }
       }
-    }
-
-    private def registerChannel(selector: Selector, socketChannel: SocketChannel) = {
-      socketChannel.configureBlocking(false)
-      socketChannel.register(selector, SelectionKey.OP_READ)
     }
 
     private def readMessageFrom(buffer: ByteBuffer, readBytes: Integer) = {
