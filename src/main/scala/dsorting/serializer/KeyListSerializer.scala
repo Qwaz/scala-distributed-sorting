@@ -12,17 +12,17 @@ object KeyListSerializer extends Serializer[List[Key]] {
   }
 
   override def fromByteArray(array: Array[Byte]): List[Key] = {
-    def readKey(stream: ByteArrayInputStream, now: List[Key]): List[Key] = {
-      if (stream.available() <= 0) now
+    def readKey(stream: ByteArrayInputStream): List[Key] = {
+      if (stream.available() <= 0) Nil
       else {
         val newKeyBuffer = emptyKeyBuffer
         stream.read(newKeyBuffer, 0, 10)
-        readKey(stream, new Key(newKeyBuffer) :: now)
+        new Key(newKeyBuffer) :: readKey(stream)
       }
     }
 
     val stream = new ByteArrayInputStream(array)
-    val keyList = readKey(stream, Nil)
+    val keyList = readKey(stream)
 
     stream.close()
 
