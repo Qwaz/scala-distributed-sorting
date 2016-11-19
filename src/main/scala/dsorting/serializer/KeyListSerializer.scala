@@ -2,7 +2,7 @@ package dsorting.serializer
 
 import java.io.ByteArrayInputStream
 
-import dsorting.common.primitive._
+import dsorting.primitive._
 
 object KeyListSerializer extends Serializer[List[Key]] {
   override def toByteArray(target: List[Key]): Array[Byte] = {

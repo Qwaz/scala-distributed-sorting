@@ -1,4 +1,4 @@
-package dsorting.common
+package dsorting
 
 import scala.concurrent._
 

@@ -1,4 +1,4 @@
-package dsorting.common
+package dsorting
 
 import java.net.InetSocketAddress
 import javax.xml.bind.DatatypeConverter

@@ -4,10 +4,10 @@ import java.net.{InetAddress, InetSocketAddress}
 import java.nio.charset.Charset
 
 import com.typesafe.scalalogging.Logger
-import dsorting.common.Setting
-import dsorting.common.future.Subscription
-import dsorting.common.messaging._
-import dsorting.common.primitive._
+import dsorting.Setting
+import dsorting.future.Subscription
+import dsorting.messaging._
+import dsorting.primitive._
 import dsorting.serializer._
 import dsorting.states.master._
 
@@ -82,10 +82,10 @@ package object master {
     }
   }
 
-  def preparePartitioning(prevState: SamplingState)(partitionTable: PartitionTable): PartitioningState = {
+  def prepareShuffling(prevState: SamplingState)(partitionTable: PartitionTable): ShufflingState = {
     val _partitionTable = partitionTable
-    new PartitioningState {
-      val logger = Logger("Master Partitioning")
+    new ShufflingState {
+      val logger = Logger("Master Shuffling")
 
       val listener = prevState.listener
       val serverSubscription: Subscription = prevState.serverSubscription
@@ -103,18 +103,18 @@ package object master {
 
         val p = Promise[Unit]()
 
-        def receivePartitionOk(data: Array[Byte]) = {
+        def receiveShufflingReady(data: Array[Byte]) = {
           remainingSlaves -= 1
           if (remainingSlaves == 0) {
-            channelTable.broadcast(Message.withType(MessageType.PartitionComplete))
+            channelTable.broadcast(Message.withType(MessageType.ShufflingStart))
             p.success(())
           }
-          logger.debug(s"partitioning ok received: $remainingSlaves remains")
+          logger.debug(s"shuffling ready received: $remainingSlaves remains")
         }
 
         listener.replaceHandler(new MessageHandler {
           def handleMessage(message: Message): Unit =  message.messageType match {
-            case MessageType.PartitionOk => receivePartitionOk(message.data)
+            case MessageType.ShufflingReady => receiveShufflingReady(message.data)
             case _ => ()
           }
         })

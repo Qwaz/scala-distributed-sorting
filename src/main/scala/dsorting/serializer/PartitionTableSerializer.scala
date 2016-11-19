@@ -3,7 +3,7 @@ package dsorting.serializer
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream, ObjectInputStream, ObjectOutputStream}
 import java.net.InetSocketAddress
 
-import dsorting.common.primitive._
+import dsorting.primitive._
 
 import scala.collection.mutable.ArrayBuffer
 

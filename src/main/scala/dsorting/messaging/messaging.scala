@@ -1,4 +1,4 @@
-package dsorting.common
+package dsorting
 
 import java.io.DataOutputStream
 import java.net.{InetSocketAddress, Socket, SocketAddress}
@@ -6,8 +6,8 @@ import java.nio.ByteBuffer
 import java.nio.channels.{SelectionKey, Selector, ServerSocketChannel, SocketChannel}
 
 import com.typesafe.scalalogging.Logger
-import dsorting.common.future._
-import dsorting.common.primitive._
+import dsorting.future._
+import dsorting.primitive._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -26,24 +26,20 @@ package object messaging {
       */
     type MessageType = Value
 
-    // Connection
-    val Introduce = Value
-
     // Sampling
+    val Introduce = Value
     val SampleData = Value
-
-    // Partitioning
     val PartitionData = Value
-    val PartitionOk = Value
-    val PartitionComplete = Value
 
     // Shuffling
-    val ShufflingData = Value
-    val ShufflingOk = Value
+    val ShufflingReady = Value
+    val ShufflingStart = Value
+    val Shuffle = Value
+    val ShufflingDone = Value
     val ShufflingComplete = Value
 
     // Sorting
-    val SortingOk = Value
+    val SortingDone = Value
     val SortingComplete = Value
   }
 

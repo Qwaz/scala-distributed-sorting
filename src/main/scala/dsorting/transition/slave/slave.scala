@@ -5,10 +5,10 @@ import java.util
 import java.util.Collections
 
 import com.typesafe.scalalogging.Logger
-import dsorting.common.Setting
-import dsorting.common.future.Subscription
-import dsorting.common.messaging._
-import dsorting.common.primitive._
+import dsorting.Setting
+import dsorting.future.Subscription
+import dsorting.messaging._
+import dsorting.primitive._
 import dsorting.serializer._
 import dsorting.states.slave._
 
@@ -105,10 +105,10 @@ package object slave {
     }
   }
 
-  def preparePartitioning(prevState: SamplingState)(partitionTable: PartitionTable): PartitioningState = {
+  def prepareShuffling(prevState: SamplingState)(partitionTable: PartitionTable): ShufflingState = {
     val _partitionTable = partitionTable
-    new PartitioningState {
-      val logger = Logger("Slave Partitioning")
+    new ShufflingState {
+      val logger = Logger("Slave Shuffling")
 
       val selfAddress = prevState.selfAddress
       val listener = prevState.listener
@@ -126,25 +126,25 @@ package object slave {
 
         val p = Promise[Unit]()
 
-        def receivePartitionComplete(data: Array[Byte]) = {
+        def receiveShufflingStart(data: Array[Byte]) = {
+          logger.debug(s"shuffling start")
           p.success(())
-          logger.debug(s"partitioning complete")
         }
 
         listener.replaceHandler(new MessageHandler {
           def handleMessage(message: Message): Unit = message.messageType match {
-            case MessageType.PartitionComplete => receivePartitionComplete(message.data)
+            case MessageType.ShufflingStart => receiveShufflingStart(message.data)
             case _ => ()
           }
         })
 
-        sendOkData()
+        sendReady()
 
         p.future
       }
 
-      private def sendOkData() = {
-        channelToMaster.sendMessage(Message.withType(MessageType.PartitionOk))
+      private def sendReady() = {
+        channelToMaster.sendMessage(Message.withType(MessageType.ShufflingReady))
       }
 
       logger.info("initialized")

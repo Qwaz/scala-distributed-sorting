@@ -1,8 +1,8 @@
 package dsorting.states.master
 
-import dsorting.common.future.Subscription
-import dsorting.common.messaging._
-import dsorting.common.primitive._
+import dsorting.future.Subscription
+import dsorting.messaging._
+import dsorting.primitive._
 
 trait MasterState[T] extends State[T] {
   val listener: MessageListener
@@ -13,7 +13,7 @@ trait MasterState[T] extends State[T] {
 
 trait SamplingState extends MasterState[PartitionTable]
 
-trait PartitioningState extends MasterState[Unit] {
+trait ShufflingState extends MasterState[Unit] {
   val partitionTable: PartitionTable
   val channelTable: ChannelTable
 }

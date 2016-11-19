@@ -2,9 +2,9 @@ package dsorting.states.slave
 
 import java.net.InetSocketAddress
 
-import dsorting.common.future.Subscription
-import dsorting.common.messaging._
-import dsorting.common.primitive._
+import dsorting.future.Subscription
+import dsorting.messaging._
+import dsorting.primitive._
 
 trait SlaveState[T] extends State[T] {
   val selfAddress: InetSocketAddress
@@ -19,7 +19,7 @@ trait SlaveState[T] extends State[T] {
 
 trait SamplingState extends SlaveState[PartitionTable]
 
-trait PartitioningState extends SlaveState[Unit] {
+trait ShufflingState extends SlaveState[Unit] {
   val partitionTable: PartitionTable
   val channelTable: ChannelTable
 }

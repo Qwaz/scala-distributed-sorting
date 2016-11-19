@@ -1,6 +1,6 @@
 package dsorting.entrypoint
 
-import dsorting.common.future._
+import dsorting.future._
 import dsorting.transition.slave._
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -10,7 +10,7 @@ import scala.concurrent.{Await, Promise}
 object SlaveApp extends App {
   val p = Promise[Unit]()
   parseArgument(args) -> prepareSampling flatMap {
-    samplingState => samplingState.run() -> preparePartitioning(samplingState) flatMap {
+    samplingState => samplingState.run() -> prepareShuffling(samplingState) flatMap {
       partitioningState => partitioningState.run() -> {
         _ => p.success(())
       }

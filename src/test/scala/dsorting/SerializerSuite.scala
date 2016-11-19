@@ -2,7 +2,7 @@ package dsorting
 
 import java.net.InetSocketAddress
 
-import dsorting.common.primitive._
+import dsorting.primitive._
 import dsorting.serializer._
 import org.junit.runner.RunWith
 import org.scalatest.FlatSpec

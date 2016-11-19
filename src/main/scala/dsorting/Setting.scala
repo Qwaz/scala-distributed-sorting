@@ -1,4 +1,4 @@
-package dsorting.common
+package dsorting
 
 import java.io.IOException
 import java.net.{InetAddress, InetSocketAddress, Socket}
@@ -37,6 +37,4 @@ object Setting {
   def SlavePort = nextAvailablePort(3939)
 
   val BufferSize = 4096
-
-  val KeySize = 10
 }
