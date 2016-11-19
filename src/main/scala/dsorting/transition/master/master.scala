@@ -47,8 +47,8 @@ package object master {
         def receiveSampleData(data: Array[Byte]) = {
           sampleKeys ++= KeyListSerializer.fromByteArray(data)
           remainingSlaves -= 1
-          if (remainingSlaves == 0) p.success(createPartitionTable())
           logger.debug(s"sample data received: $remainingSlaves remains")
+          if (remainingSlaves == 0) p.success(createPartitionTable())
         }
 
         listener.replaceHandler(new MessageHandler {
@@ -93,11 +93,11 @@ package object master {
 
         def receiveShufflingReady(data: Array[Byte]) = {
           remainingSlaves -= 1
+          logger.debug(s"shuffling ready received: $remainingSlaves remains")
           if (remainingSlaves == 0) {
             channelTable.broadcast(Message.withType(MessageType.ShufflingStart))
             p.success(())
           }
-          logger.debug(s"shuffling ready received: $remainingSlaves remains")
         }
 
         listener.replaceHandler(new MessageHandler {

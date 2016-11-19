@@ -1,12 +1,23 @@
 package dsorting
 
+import java.io.{PrintWriter, StringWriter}
+
+import com.typesafe.scalalogging.Logger
+
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent._
 
 package object future {
   implicit class FutureCompanionOps(val x: Future.type) extends AnyVal {
     def run()(f: CancellationToken => Future[Unit]): Subscription = {
       val subscription = CancellationTokenSource()
-      f(subscription.cancellationToken)
+      f(subscription.cancellationToken) onFailure {
+        case e =>
+          val logger = Logger("Background Exception")
+          val sw = new StringWriter
+          e.printStackTrace(new PrintWriter(sw))
+          logger.error(sw.toString)
+      }
       subscription
     }
   }

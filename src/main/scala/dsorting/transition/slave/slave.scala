@@ -1,12 +1,10 @@
 package dsorting.transition
 
-import java.net.{InetAddress, InetSocketAddress, URI, URISyntaxException}
+import java.net.{InetSocketAddress, URI, URISyntaxException}
 import java.util
 import java.util.Collections
 
 import com.typesafe.scalalogging.Logger
-import dsorting.Setting
-import dsorting.future.Subscription
 import dsorting.messaging._
 import dsorting.primitive._
 import dsorting.serializer._
@@ -51,8 +49,8 @@ package object slave {
 
         def receivePartitionData(data: Array[Byte]) = {
           val partitionTable = PartitionTableSerializer.fromByteArray(data)
-          p.success(partitionTable)
           logger.debug(partitionTable.toString)
+          p.success(partitionTable)
         }
 
         listener.replaceHandler(new MessageHandler {

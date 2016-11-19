@@ -1,14 +1,18 @@
 package dsorting.serializer
 
-import java.io.ByteArrayInputStream
+import java.io.{ByteArrayInputStream, ByteArrayOutputStream}
 
 import dsorting.primitive._
 
 object KeyListSerializer extends Serializer[List[Key]] {
   override def toByteArray(target: List[Key]): Array[Byte] = {
-    target.foldLeft(Array[Byte]()) {
-      (acc, key) => acc ++ key.bytes
-    }
+    val stream = new ByteArrayOutputStream()
+
+    target.foreach(key => stream.write(key.bytes))
+
+    stream.close()
+
+    stream.toByteArray
   }
 
   override def fromByteArray(array: Array[Byte]): List[Key] = {

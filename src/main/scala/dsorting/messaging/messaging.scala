@@ -1,6 +1,6 @@
 package dsorting
 
-import java.io.DataOutputStream
+import java.io.{ByteArrayOutputStream, DataOutputStream}
 import java.net.{InetSocketAddress, Socket, SocketAddress}
 import java.nio.ByteBuffer
 import java.nio.channels.{SelectionKey, Selector, ServerSocketChannel, SocketChannel}
@@ -10,7 +10,7 @@ import dsorting.future._
 import dsorting.primitive._
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import scala.concurrent.{Future, blocking}
 
 package object messaging {
   def messagingLogging(log: String) = {
@@ -47,6 +47,15 @@ package object messaging {
     override def toString = {
       s"$messageType - $data"
     }
+
+    def toBytes = {
+      val byteStream = new ByteArrayOutputStream()
+      byteStream.write(messageType.id)
+      byteStream.write(data)
+
+      byteStream.close()
+      byteStream.toByteArray
+    }
   }
 
   object Message {
@@ -62,8 +71,7 @@ package object messaging {
 
     def sendMessage(message: Message): Future[Unit] = Future {
       stream.synchronized {
-        stream.writeByte(message.messageType.id)
-        stream.write(message.data)
+        stream.write(message.toBytes)
         messagingLogging(s"Sent ${message.data.length + 1} bytes")
         stream.flush()
       }
@@ -119,22 +127,24 @@ package object messaging {
 
       Future.run() {
         ct => Future {
-          while (ct.nonCancelled) {
-            selector.select
+          blocking {
+            while (ct.nonCancelled) {
+              selector.select
 
-            val it = selector.selectedKeys.iterator
-            while (it.hasNext) {
-              val key = it.next
-              if (key.isAcceptable) {
-                accept(key)
+              val it = selector.selectedKeys.iterator
+              while (it.hasNext) {
+                val key = it.next
+                if (key.isAcceptable) {
+                  accept(key)
+                }
+                if (key.isReadable) {
+                  read(key)
+                }
+                it.remove()
               }
-              if (key.isReadable) {
-                read(key)
-              }
-              it.remove()
             }
+            socket.close()
           }
-          socket.close()
         }
       }
     }
