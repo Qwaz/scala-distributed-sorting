@@ -1,11 +1,10 @@
 package dsorting.transition
 
-import java.net.{InetAddress, InetSocketAddress}
+import java.net.InetSocketAddress
 import java.nio.charset.Charset
 
 import com.typesafe.scalalogging.Logger
 import dsorting.Setting
-import dsorting.future.Subscription
 import dsorting.messaging._
 import dsorting.primitive._
 import dsorting.serializer._
@@ -23,14 +22,8 @@ package object master {
 
   def prepareSampling(numSlaves: Integer): SamplingState = {
     val _numSlaves = numSlaves
-    new SamplingState {
+    new FreshState(Setting.MasterPort) with SamplingState {
       val logger = Logger("Master Sampling")
-
-      private val masterAddress = new InetSocketAddress(InetAddress.getLocalHost.getHostAddress, Setting.MasterPort)
-      logger.debug(s"master address: $masterAddress")
-
-      val listener = new MessageListener(masterAddress)
-      val serverSubscription: Subscription = listener.startServer
 
       val numSlaves = _numSlaves
       logger.debug(s"numSlaves $numSlaves")
@@ -84,13 +77,8 @@ package object master {
 
   def prepareShuffling(prevState: SamplingState)(partitionTable: PartitionTable): ShufflingState = {
     val _partitionTable = partitionTable
-    new ShufflingState {
+    new TransitionFrom(prevState) with ShufflingState {
       val logger = Logger("Master Shuffling")
-
-      val listener = prevState.listener
-      val serverSubscription: Subscription = prevState.serverSubscription
-
-      val numSlaves = prevState.numSlaves
 
       val partitionTable = _partitionTable
       logger.debug(partitionTable.toString)

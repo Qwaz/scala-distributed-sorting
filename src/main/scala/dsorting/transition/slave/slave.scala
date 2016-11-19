@@ -41,19 +41,8 @@ package object slave {
   }
 
   def prepareSampling(slaveStartupInfo: SlaveStartupInfo): SamplingState = {
-    new SamplingState {
+    new FreshState(slaveStartupInfo) with SamplingState {
       val logger = Logger("Slave Sampling")
-
-      val selfAddress = new InetSocketAddress(InetAddress.getLocalHost.getHostAddress, Setting.SlavePort)
-      logger.debug(s"self address: $selfAddress")
-      logger.debug(s"master address: ${slaveStartupInfo.masterAddress}")
-
-      val listener = new MessageListener(selfAddress)
-      val serverSubscription: Subscription = listener.startServer
-
-      val channelToMaster = new Channel(Master, slaveStartupInfo.masterAddress)
-
-      val ioDirectoryInfo = slaveStartupInfo.ioDirectoryInfo
 
       def run() = {
         logger.info("start running")
@@ -107,16 +96,8 @@ package object slave {
 
   def prepareShuffling(prevState: SamplingState)(partitionTable: PartitionTable): ShufflingState = {
     val _partitionTable = partitionTable
-    new ShufflingState {
+    new TransitionFrom(prevState) with ShufflingState {
       val logger = Logger("Slave Shuffling")
-
-      val selfAddress = prevState.selfAddress
-      val listener = prevState.listener
-      val serverSubscription = prevState.serverSubscription
-
-      val channelToMaster = prevState.channelToMaster
-
-      val ioDirectoryInfo = prevState.ioDirectoryInfo
 
       val partitionTable = _partitionTable
       val channelTable = ChannelTable.fromPartitionTable(partitionTable)
