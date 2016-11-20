@@ -35,9 +35,9 @@ class SerializerSuite extends FlatSpec {
     val clone = KeyListSerializer.fromByteArray(KeyListSerializer.toByteArray(keyList))
 
     it should "serialize key list correctly" in {
-      def keyListToString(keyList: List[Key]): String = keyList match {
+      def keyListToString(keyList: Seq[Key]): String = keyList match {
         case Nil => ""
-        case key :: tail => key.toString + " / " + keyListToString(tail)
+        case key +: tail => key.toString + " / " + keyListToString(tail)
       }
       assert(keyListToString(keyList) == keyListToString(clone))
     }

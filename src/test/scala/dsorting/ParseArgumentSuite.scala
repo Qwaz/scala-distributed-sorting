@@ -49,7 +49,7 @@ class ParseArgumentSuite extends AsyncFlatSpec {
 
     it should "parse input directories correctly" in {
       parseArgument(slaveArgumentArray) map { slaveStartupInfo => assert(
-        slaveStartupInfo.ioDirectoryInfo.inputFiles == "a" :: "b" :: "c" :: Nil
+        slaveStartupInfo.ioDirectoryInfo.inputDirectories == "a" :: "b" :: "c" :: Nil
       )
       }
     }

@@ -5,11 +5,13 @@ import java.util
 import java.util.Collections
 
 import com.typesafe.scalalogging.Logger
+import dsorting.{Directory, EntryReader, FileEntryReader, Setting}
 import dsorting.messaging._
 import dsorting.primitive._
 import dsorting.serializer._
 import dsorting.states.slave._
 
+import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Future, Promise}
 
@@ -75,16 +77,26 @@ package object slave {
       }
 
       private def performSampling() = {
-        // TODO: change to real sampling
-        val first = Array[Byte](0, 1, 2, 3, 4, 5, 6, 7, 8, 9)
-        val second = Array[Byte](9, 8, 7, 6, 5, 4, 3, 2, 1, 0)
+        val keys = mutable.MutableList[Key]()
+        for (directoryName <- ioDirectoryInfo.inputDirectories) {
+          val directory = Directory(directoryName)
+          for (inputFile <- directory.listFilesWithPrefix(Setting.InputFilePrefix)) {
+            val reader = new FileEntryReader(inputFile)
 
-        Collections.shuffle(util.Arrays.asList(first))
-        Collections.shuffle(util.Arrays.asList(second))
+            var remain = Setting.NumSamples
+            while (remain > 0 && reader.hasNext) {
+              val entry = reader.next()
+              keys += entry.key
+              remain -= 1
+            }
+
+            reader.close()
+          }
+        }
 
         channelToMaster.sendMessage(new Message(
           MessageType.SampleData,
-          KeyListSerializer.toByteArray(Key(first) :: Key(second) :: Nil)
+          KeyListSerializer.toByteArray(keys)
         ))
       }
 

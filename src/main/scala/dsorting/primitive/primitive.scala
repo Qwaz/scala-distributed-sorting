@@ -30,8 +30,8 @@ package object primitive {
 
   def emptyKeyBuffer = new Array[Byte](10)
 
-  class IODirectoryInfo(val inputFiles: List[String], val outputDirectory: String) {
-    require(inputFiles.nonEmpty)
+  class IODirectoryInfo(val inputDirectories: List[String], val outputDirectory: String) {
+    require(inputDirectories.nonEmpty)
   }
 
   class SlaveStartupInfo(val masterAddress: InetSocketAddress, val ioDirectoryInfo: IODirectoryInfo)

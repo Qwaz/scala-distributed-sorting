@@ -24,12 +24,18 @@ class Directory(path: String) {
   }
 }
 
+object Directory {
+  def apply(path: String) = {
+    new Directory(path)
+  }
+}
+
 trait EntryReader extends Iterator[Entry] {
   def numEntries: Long
   def remainingEntries: Integer
 }
 
-class FileEntryReader(val file: File) extends EntryReader {
+class FileEntryReader(val file: File) extends EntryReader with AutoCloseable {
   require(file.isFile)
   require(file.length % Setting.EntrySize == 0)
   private val fileStream = new FileInputStream(file)
@@ -38,11 +44,11 @@ class FileEntryReader(val file: File) extends EntryReader {
   def remainingEntries = fileStream.available / Setting.EntrySize
 
   override def next() = {
-    val keyBytes: Array[Byte] = null
+    val keyBytes = new Array[Byte](Setting.KeySize)
     fileStream.read(keyBytes, 0, Setting.KeySize)
 
-    val valueBytes: Array[Byte] = null
-    fileStream.read(keyBytes, 0, Setting.ValueSize)
+    val valueBytes = new Array[Byte](Setting.ValueSize)
+    fileStream.read(valueBytes, 0, Setting.ValueSize)
 
     Entry(Key(keyBytes), Value(valueBytes))
   }
@@ -57,7 +63,7 @@ trait EntryWriter {
   def close()
 }
 
-class FileEntryWriter(val file: File) extends EntryWriter {
+class FileEntryWriter(val file: File) extends EntryWriter with AutoCloseable {
   require(file.isFile)
   private val fileStream = new FileOutputStream(file)
 
