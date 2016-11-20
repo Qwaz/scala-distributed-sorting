@@ -37,4 +37,10 @@ object Setting {
   def SlavePort = nextAvailablePort(3939)
 
   val BufferSize = 4096
+
+  val KeySize = 10
+  val ValueSize = 90
+  val EntrySize = KeySize + ValueSize
+
+  val TempFilePrefix = "tmp"
 }

@@ -16,15 +16,15 @@ package object primitive {
 
   object Key {
     def apply(bytes: Array[Byte]) = {
-      require(bytes.length == 10)
+      require(bytes.length == Setting.KeySize)
       new Key(bytes)
     }
   }
 
   object Value {
     def apply(bytes: Array[Byte]) = {
-      require(bytes.length == 90)
-      new Key(bytes)
+      require(bytes.length == Setting.ValueSize)
+      new Value(bytes)
     }
   }
 
@@ -36,7 +36,7 @@ package object primitive {
 
   class SlaveStartupInfo(val masterAddress: InetSocketAddress, val ioDirectoryInfo: IODirectoryInfo)
 
-  case class Entity(key: Key, value: Value)
+  case class Entry(key: Key, value: Value)
 
   abstract class Identity
   case object Master extends Identity {
