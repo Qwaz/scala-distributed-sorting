@@ -31,7 +31,7 @@ package object master {
       private var remainingSlaves = numSlaves
 
       private val slaveAddresses = ArrayBuffer[InetSocketAddress]()
-      private val sampleKeys = ArrayBuffer[Key]()
+      private val sampleKeys = ArrayBuffer[Key](Key(Array[Byte](0, 0, 0, 0, 0, 0, 0, 0, 0, 0)))
 
       def run() = {
         logger.info("start running")
