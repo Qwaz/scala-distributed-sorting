@@ -45,13 +45,13 @@ object SamplingInitializer {
           if (remainingSlaves == 0) p.success(createPartitionTable())
         }
 
-        listener.replaceHandler(new MessageHandler {
-          def handleMessage(message: Message): Unit = message.messageType match {
+        listener.replaceHandler {
+          message => message.messageType match {
             case MessageType.Introduce => receiveIntroduce(message.data)
             case MessageType.SampleData => receiveSampleData(message.data)
             case _ => ()
           }
-        })
+        }
 
         p.future
       }

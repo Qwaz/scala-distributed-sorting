@@ -34,12 +34,12 @@ object ShufflingInitializer {
           }
         }
 
-        listener.replaceHandler(new MessageHandler {
-          def handleMessage(message: Message): Unit =  message.messageType match {
+        listener.replaceHandler {
+          message => message.messageType match {
             case MessageType.ShufflingReady => receiveShufflingReady(message.data)
             case _ => ()
           }
-        })
+        }
 
         broadcastPartitionTable()
 

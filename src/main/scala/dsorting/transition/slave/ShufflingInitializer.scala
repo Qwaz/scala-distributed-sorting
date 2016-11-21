@@ -26,12 +26,12 @@ object ShufflingInitializer {
           p.success(())
         }
 
-        listener.replaceHandler(new MessageHandler {
-          def handleMessage(message: Message): Unit = message.messageType match {
+        listener.replaceHandler {
+          message => message.messageType match {
             case MessageType.ShufflingStart => receiveShufflingStart(message.data)
             case _ => ()
           }
-        })
+        }
 
         sendReady()
 

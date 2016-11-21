@@ -97,10 +97,6 @@ object ChannelTable {
   }
 }
 
-trait MessageHandler {
-  def handleMessage(message: Message): Unit
-}
-
 class MessageListener(bindAddress: InetSocketAddress) {
   /*
   http://zeroit.tistory.com/236
@@ -113,10 +109,9 @@ class MessageListener(bindAddress: InetSocketAddress) {
   private val socket = serverChannel.socket
   socket.bind(bindAddress)
 
-  private var messageHandler: MessageHandler = new MessageHandler {
-    def handleMessage(message: Message) = {
-      ()
-    }
+  type MessageHandler = Message => Unit
+  private var messageHandler: MessageHandler = {
+    _ => ()
   }
 
   def replaceHandler(handler: MessageHandler) = {
@@ -169,7 +164,7 @@ class MessageListener(bindAddress: InetSocketAddress) {
         } else {
           MessageLogger.log(s"Read $readBytes bytes")
           buffer.flip()
-          messageHandler.handleMessage(readMessageFrom(buffer, readBytes))
+          messageHandler(readMessageFrom(buffer, readBytes))
         }
     }
   }

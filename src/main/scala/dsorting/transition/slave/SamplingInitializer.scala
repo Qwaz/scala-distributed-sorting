@@ -27,13 +27,11 @@ object SamplingInitializer {
           p.success(partitionTable)
         }
 
-        listener.replaceHandler(new MessageHandler {
-          def handleMessage(message: Message): Unit = {
-            message.messageType match {
-              case MessageType.PartitionData => receivePartitionData(message.data)
-            }
+        listener.replaceHandler{
+          message => message.messageType match {
+            case MessageType.PartitionData => receivePartitionData(message.data)
           }
-        })
+        }
 
         introduce()
         performSampling()
