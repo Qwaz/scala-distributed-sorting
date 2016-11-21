@@ -9,53 +9,53 @@ import scala.concurrent.ExecutionContext.Implicits.global
 @RunWith(classOf[JUnitRunner])
 class ParseArgumentSuite extends AsyncFlatSpec {
   {
-    import dsorting.transition.master.parseArgument
+    import dsorting.transition.master.ArgumentParser
 
-    behavior of "parseArgument (master)"
+    behavior of "ArgumentParser (master)"
 
     it should "parse one integer argument" in {
       val argumentArray = Array("42")
-      parseArgument(argumentArray) map { res => assert(res == 42) }
+      ArgumentParser.parseArgument(argumentArray) map { res => assert(res == 42) }
     }
 
     it should "reject multiple arguments" in {
       val argumentArray = Array("1", "2", "3")
       recoverToSucceededIf[IllegalArgumentException] {
-        parseArgument(argumentArray)
+        ArgumentParser.parseArgument(argumentArray)
       }
     }
   }
 
   {
-    import dsorting.transition.slave.parseArgument
+    import dsorting.transition.slave.ArgumentParser
 
-    behavior of "parseArgument (slave)"
+    behavior of "ArgumentParser (slave)"
 
     def slaveArgumentArray = Array("50.100.150.200:2525", "-I", "a", "b", "c", "-O", "d")
 
     it should "parse master address correctly" in {
-      parseArgument(slaveArgumentArray) map { slaveStartupInfo => assert(
+      ArgumentParser.parseArgument(slaveArgumentArray) map { slaveStartupInfo => assert(
         slaveStartupInfo.masterAddress.getHostString == "50.100.150.200"
       )
       }
     }
 
     it should "parse master port correctly" in {
-      parseArgument(slaveArgumentArray) map { slaveStartupInfo => assert(
+      ArgumentParser.parseArgument(slaveArgumentArray) map { slaveStartupInfo => assert(
         slaveStartupInfo.masterAddress.getPort == 2525
       )
       }
     }
 
     it should "parse input directories correctly" in {
-      parseArgument(slaveArgumentArray) map { slaveStartupInfo => assert(
+      ArgumentParser.parseArgument(slaveArgumentArray) map { slaveStartupInfo => assert(
         slaveStartupInfo.ioDirectoryInfo.inputDirectories == "a" :: "b" :: "c" :: Nil
       )
       }
     }
 
     it should "parse ourput directory correctly" in {
-      parseArgument(slaveArgumentArray) map { slaveStartupInfo => assert(
+      ArgumentParser.parseArgument(slaveArgumentArray) map { slaveStartupInfo => assert(
         slaveStartupInfo.ioDirectoryInfo.outputDirectory == "d"
       )
       }

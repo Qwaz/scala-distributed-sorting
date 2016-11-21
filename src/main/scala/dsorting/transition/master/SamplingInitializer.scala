@@ -1,4 +1,4 @@
-package dsorting.transition
+package dsorting.transition.master
 
 import java.net.InetSocketAddress
 import java.nio.charset.Charset
@@ -11,15 +11,9 @@ import dsorting.serializer._
 import dsorting.states.master._
 
 import scala.collection.mutable.ArrayBuffer
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.{Future, Promise}
+import scala.concurrent.Promise
 
-package object master {
-  def parseArgument(args: Array[String]): Future[Integer] = Future {
-    if (args.length != 1) throw new IllegalArgumentException("Argument size must be 1")
-    args(0).toInt
-  }
-
+object SamplingInitializer {
   def prepareSampling(numSlaves: Integer): SamplingState = {
     val _numSlaves = numSlaves
     new FreshState(Setting.MasterPort) with SamplingState {
@@ -69,59 +63,6 @@ package object master {
           case (socketAddress, i) => new SlaveRange(socketAddress, sortedKeys(i*step))
         }
         new PartitionTable(Master, slaveRanges.toVector)
-      }
-
-      logger.info("initialized")
-    }
-  }
-
-  def prepareShuffling(prevState: SamplingState)(partitionTable: PartitionTable): ShufflingState = {
-    val _partitionTable = partitionTable
-    new TransitionFrom(prevState) with ShufflingState {
-      val logger = Logger("Master Shuffling")
-
-      val partitionTable = _partitionTable
-      logger.debug(partitionTable.toString)
-      val channelTable = ChannelTable.fromPartitionTable(partitionTable)
-
-      private var remainingSlaves = numSlaves
-
-      def run() = {
-        logger.info("start running")
-
-        val p = Promise[Unit]()
-
-        def receiveShufflingReady(data: Array[Byte]) = {
-          remainingSlaves -= 1
-          logger.debug(s"shuffling ready received: $remainingSlaves remains")
-          if (remainingSlaves == 0) {
-            channelTable.broadcast(Message.withType(MessageType.ShufflingStart))
-            p.success(())
-          }
-        }
-
-        listener.replaceHandler(new MessageHandler {
-          def handleMessage(message: Message): Unit =  message.messageType match {
-            case MessageType.ShufflingReady => receiveShufflingReady(message.data)
-            case _ => ()
-          }
-        })
-
-        broadcastPartitionTable()
-
-        p.future
-      }
-
-      private def broadcastPartitionTable() = {
-        channelTable.channels.zipWithIndex.foreach {
-          case (channel, i) =>
-            channel.sendMessage(new Message(
-              MessageType.PartitionData,
-              PartitionTableSerializer.toByteArray(
-                new PartitionTable(Slave(i), partitionTable.slaveRanges)
-              )
-            ))
-        }
       }
 
       logger.info("initialized")

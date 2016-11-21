@@ -9,11 +9,12 @@ import scala.concurrent.{Await, Promise}
 
 object MasterApp extends App {
   val p = Promise[Unit]()
-  parseArgument(args) -> prepareSampling flatMap {
-    samplingState => samplingState.run() -> prepareShuffling(samplingState) flatMap {
-      partitioningState => partitioningState.run() -> {
-        _ => p.success(())
-      }
+  ArgumentParser.parseArgument(args) ->
+    SamplingInitializer.prepareSampling flatMap {
+    samplingState => samplingState.run() ->
+      ShufflingInitializer.prepareShuffling(samplingState) flatMap {
+      shufflingState => shufflingState.run() ->
+        { _ => p.success(()) }
     }
   } onFailure { case e => p.tryFailure(e) }
   Await.result(p.future, Duration.Inf)
