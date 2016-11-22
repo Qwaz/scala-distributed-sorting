@@ -59,12 +59,12 @@ class FileEntryReader(val file: File) extends EntryReader with AutoCloseable {
   def close() = fileStream.close()
 }
 
-trait EntryWriter {
+trait EntryWriter extends AutoCloseable {
   def writeEntry(entry: Entry)
   def close()
 }
 
-class FileEntryWriter(val file: File) extends EntryWriter with AutoCloseable {
+class FileEntryWriter(val file: File) extends EntryWriter {
   require(file.isFile)
 
   if (!file.exists) file.createNewFile()
