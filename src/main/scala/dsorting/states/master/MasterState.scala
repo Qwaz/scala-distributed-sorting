@@ -10,7 +10,7 @@ import dsorting.primitive._
 
 trait MasterState[T] extends State[T] {
   val listener: MessageListener
-  val serverSubscription: Subscription
+  val listenerSubscription: Subscription
 
   val numSlaves: Integer
 }
@@ -28,7 +28,7 @@ class FreshState(port: Integer) {
   private val masterAddress = new InetSocketAddress(InetAddress.getLocalHost.getHostAddress, Setting.MasterPort)
 
   val listener = new MessageListener(masterAddress)
-  val serverSubscription: Subscription = listener.startServer
+  val listenerSubscription: Subscription = listener.start()
 
   private val logger = Logger("Fresh Master State")
   logger.debug(s"master address: $masterAddress")
@@ -36,7 +36,7 @@ class FreshState(port: Integer) {
 
 class TransitionFrom[T](prevState: MasterState[T]) {
   val listener = prevState.listener
-  val serverSubscription: Subscription = prevState.serverSubscription
+  val listenerSubscription: Subscription = prevState.listenerSubscription
 
   val numSlaves = prevState.numSlaves
 }

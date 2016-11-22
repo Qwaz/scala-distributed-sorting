@@ -12,7 +12,7 @@ trait SlaveState[T] extends State[T] {
   val selfAddress: InetSocketAddress
 
   val listener: MessageListener
-  val serverSubscription: Subscription
+  val listenerSubscription: Subscription
 
   val channelToMaster: Channel
 
@@ -32,7 +32,7 @@ class FreshState(slaveStartupInfo: SlaveStartupInfo) {
   val selfAddress = new InetSocketAddress(InetAddress.getLocalHost.getHostAddress, Setting.SlavePort)
 
   val listener = new MessageListener(selfAddress)
-  val serverSubscription: Subscription = listener.startServer
+  val listenerSubscription: Subscription = listener.start()
 
   val channelToMaster = new Channel(Master, slaveStartupInfo.masterAddress)
 
@@ -47,7 +47,7 @@ class TransitionFrom[T](prevState: SlaveState[T]) {
   val selfAddress = prevState.selfAddress
 
   val listener = prevState.listener
-  val serverSubscription = prevState.serverSubscription
+  val listenerSubscription = prevState.listenerSubscription
 
   val channelToMaster = prevState.channelToMaster
 

@@ -33,10 +33,10 @@ object Setting {
 
   val MessageLoggingEnabled = false
 
-  def MasterPort = nextAvailablePort(25252)
+  def MasterPort = 25252
   def SlavePort = nextAvailablePort(3939)
 
-  val BufferSize = 4096
+  val BufferSize = 1024 * 1024 * 1 // 1 MiB
 
   val KeySize = 10
   val ValueSize = 90

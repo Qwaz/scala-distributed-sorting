@@ -19,9 +19,9 @@ object KeyListSerializer extends Serializer[Seq[Key]] {
     def readKey(stream: ByteArrayInputStream): Seq[Key] = {
       if (stream.available() <= 0) Nil
       else {
-        val newKeyBuffer = EmptyKeyBufferFactory()
-        stream.read(newKeyBuffer, 0, 10)
-        new Key(newKeyBuffer) +: readKey(stream)
+        val keyBuffer = BufferFactory.emptyKeyBuffer()
+        stream.read(keyBuffer, 0, 10)
+        new Key(keyBuffer) +: readKey(stream)
       }
     }
 

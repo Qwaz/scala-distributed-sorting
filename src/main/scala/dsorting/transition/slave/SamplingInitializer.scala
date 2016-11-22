@@ -30,6 +30,7 @@ object SamplingInitializer {
         listener.replaceHandler{
           message => message.messageType match {
             case MessageType.PartitionData => receivePartitionData(message.data)
+            case _ => ()
           }
         }
 

@@ -1,16 +1,19 @@
 package dsorting.serializer
 
-import java.io.{ByteArrayInputStream, ByteArrayOutputStream, ObjectInputStream, ObjectOutputStream}
+import java.io._
 import java.net.InetSocketAddress
+import javax.xml.bind.DatatypeConverter
+
+import com.typesafe.scalalogging.Logger
 
 object InetSocketAddressSerializer extends Serializer[InetSocketAddress] {
   override def toByteArray(target: InetSocketAddress): Array[Byte] = {
     val byteStream = new ByteArrayOutputStream()
-    val objectStream = new ObjectOutputStream(byteStream)
-    objectStream.writeUTF(target.getAddress.getHostAddress)
-    objectStream.writeInt(target.getPort)
+    val dataStream = new DataOutputStream(byteStream)
+    dataStream.writeUTF(target.getAddress.getHostAddress)
+    dataStream.writeInt(target.getPort)
 
-    objectStream.close()
+    dataStream.close()
     byteStream.close()
 
     byteStream.toByteArray
@@ -18,12 +21,12 @@ object InetSocketAddressSerializer extends Serializer[InetSocketAddress] {
 
   override def fromByteArray(array: Array[Byte]): InetSocketAddress = {
     val byteStream = new ByteArrayInputStream(array)
-    val objectStream = new ObjectInputStream(byteStream)
+    val dataStream = new DataInputStream(byteStream)
 
-    val host = objectStream.readUTF()
-    val port = objectStream.readInt()
+    val host = dataStream.readUTF()
+    val port = dataStream.readInt()
 
-    objectStream.close()
+    dataStream.close()
     byteStream.close()
 
     new InetSocketAddress(host, port)

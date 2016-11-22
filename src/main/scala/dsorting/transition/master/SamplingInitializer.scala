@@ -57,7 +57,8 @@ object SamplingInitializer {
       }
 
       private def createPartitionTable() = {
-        val sortedKeys = sampleKeys.sortBy(key => new String(key.bytes, Charset.forName("US-ASCII")))
+        val sortedKeys = sampleKeys.sortWith(_ <= _)
+        logger.debug(sortedKeys.toString)
         val step = sortedKeys.length / numSlaves
         val slaveRanges = slaveAddresses.zipWithIndex.map {
           case (socketAddress, i) => new SlaveRange(socketAddress, sortedKeys(i*step))

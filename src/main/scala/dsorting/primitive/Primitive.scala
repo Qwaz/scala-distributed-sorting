@@ -9,6 +9,13 @@ import scala.concurrent.Future
 
 class Key(val bytes: Array[Byte]) {
   override def toString: String = DatatypeConverter.printHexBinary(bytes)
+
+  def <= (key: Key) = {
+    var index = 0
+    while (index < Setting.KeySize && bytes(index) == key.bytes(index)) index += 1
+    if (index == Setting.KeySize || (bytes(index) & 0xFF) <= (key.bytes(index) & 0xFF)) true
+    else false
+  }
 }
 
 class Value(val bytes: Array[Byte]) {
@@ -29,8 +36,9 @@ object Value {
   }
 }
 
-object EmptyKeyBufferFactory {
-  def apply() = new Array[Byte](10)
+object BufferFactory {
+  def emptyKeyBuffer() = new Array[Byte](Setting.KeySize)
+  def emptyValueBuffer() = new Array[Byte](Setting.ValueSize)
 }
 
 class IODirectoryInfo(val inputDirectories: List[String], val outputDirectory: String) {
@@ -39,7 +47,11 @@ class IODirectoryInfo(val inputDirectories: List[String], val outputDirectory: S
 
 class SlaveStartupInfo(val masterAddress: InetSocketAddress, val ioDirectoryInfo: IODirectoryInfo)
 
-case class Entry(key: Key, value: Value)
+case class Entry(key: Key, value: Value) {
+  override def toString: String = {
+    s"Entry ($key $value)"
+  }
+}
 
 abstract class Identity
 case object Master extends Identity {
@@ -62,6 +74,17 @@ class PartitionTable(val identity: Identity, val slaveRanges: IndexedSeq[SlaveRa
       str = str + s"\n $slaveRange"
     }
     str
+  }
+
+  def findSlaveIndexForKey(key: Key) = {
+    def binarySearch(l: Int, r: Int): Int = {
+      if (l < r) {
+        val m = (l + r) >> 1
+        if (slaveRanges(m).startKey <= key) binarySearch(m+1, r)
+        else binarySearch(l, m)
+      } else l-1
+    }
+    binarySearch(1, slaveRanges.length)
   }
 }
 
