@@ -2,7 +2,7 @@ package dsorting.transition.slave
 
 import com.typesafe.scalalogging.Logger
 import dsorting.Setting
-import dsorting.diskio.{Directory, FileEntryReader}
+import dsorting.diskio.{Directory, FileEntryReader, FileEntryWriter}
 import dsorting.messaging._
 import dsorting.primitive._
 import dsorting.serializer.EntrySerializer
@@ -20,6 +20,11 @@ object ShufflingInitializer {
 
       val partitionTable = _partitionTable
       val channelTable = ChannelTable.fromPartitionTable(partitionTable)
+
+      private val ShufflingPrefix = "shuffling"
+      private val outputDirectory = Directory(ioDirectoryInfo.outputDirectory)
+      outputDirectory.deleteFilesWithPrefix(ShufflingPrefix)
+      private val entryWriter = new FileEntryWriter(outputDirectory.createTemporaryFileWithPrefix(ShufflingPrefix))
 
       def run() = {
         logger.info("start running")
@@ -41,7 +46,7 @@ object ShufflingInitializer {
 
         def receiveShuffle(data: Array[Byte]) = {
           val entry = EntrySerializer.fromByteArray(data)
-          //logger.debug(entry.toString)
+          entryWriter.writeEntry(entry)
         }
 
         listener.replaceHandler {

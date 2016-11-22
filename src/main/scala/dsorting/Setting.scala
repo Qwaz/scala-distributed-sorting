@@ -43,7 +43,6 @@ object Setting {
   val EntrySize = KeySize + ValueSize
 
   val InputFilePrefix = "input"
-  val TempFilePrefix = "tmp"
 
   val NumSamples = 10
 }

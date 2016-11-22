@@ -15,13 +15,13 @@ class Directory(path: String) {
     })
   }
 
-  def allocateTemporaryFIle() = {
-    File.createTempFile(Setting.TempFilePrefix, "", folder)
+  def createTemporaryFileWithPrefix(prefix: String) = {
+    File.createTempFile(prefix, "", folder)
   }
 
-  def clearTemporaryFiles() = {
-    val tempFiles = listFilesWithPrefix(Setting.TempFilePrefix)
-    tempFiles.foreach(f => f.delete())
+  def deleteFilesWithPrefix(prefix: String) = {
+    val files = listFilesWithPrefix(prefix)
+    files.foreach(f => f.delete())
   }
 }
 
@@ -66,6 +66,9 @@ trait EntryWriter {
 
 class FileEntryWriter(val file: File) extends EntryWriter with AutoCloseable {
   require(file.isFile)
+
+  if (!file.exists) file.createNewFile()
+
   private val fileStream = new FileOutputStream(file)
 
   override def writeEntry(entry: Entry) = {
