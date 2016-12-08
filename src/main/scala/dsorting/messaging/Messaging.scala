@@ -1,6 +1,6 @@
 package dsorting.messaging
 
-import java.io.{ByteArrayInputStream, ByteArrayOutputStream, DataInputStream, DataOutputStream}
+import java.io.{ByteArrayOutputStream, DataOutputStream, PrintWriter, StringWriter}
 import java.net.{InetSocketAddress, Socket, SocketAddress}
 import java.nio.ByteBuffer
 import java.nio.channels.{SelectionKey, Selector, ServerSocketChannel, SocketChannel}
@@ -10,12 +10,12 @@ import dsorting.Setting
 import dsorting.future._
 import dsorting.primitive._
 
-import scala.collection.mutable.ArrayBuffer
+import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Future, blocking}
 
 object MessageLogger {
-  def log(msg: String) = {
+  def log(msg: String): Unit = {
     if (Setting.MessageLoggingEnabled) {
       Logger("Messaging").debug(msg)
     }
@@ -46,11 +46,11 @@ object MessageType extends Enumeration {
 }
 
 class Message(val messageType: MessageType.MessageType, val data: Array[Byte]) {
-  override def toString = {
+  override def toString: String = {
     s"$messageType - $data"
   }
 
-  def toBytes = {
+  def toBytes: Array[Byte] = {
     val byteStream = new ByteArrayOutputStream()
     val dataStream = new DataOutputStream(byteStream)
 
@@ -65,7 +65,7 @@ class Message(val messageType: MessageType.MessageType, val data: Array[Byte]) {
 }
 
 object Message {
-  def withType(messageType: MessageType.MessageType) = {
+  def withType(messageType: MessageType.MessageType): Message = {
     new Message(messageType, Array[Byte]())
   }
 }
@@ -86,15 +86,15 @@ class Channel(val identity: Identity, address: SocketAddress) {
 }
 
 class ChannelTable(val channels: IndexedSeq[Channel]) {
-  def apply(index: Integer) = channels(index)
+  def apply(index: Integer): Channel = channels(index)
 
-  def broadcast(message: Message) = {
+  def broadcast(message: Message): Unit = {
     channels.foreach { channel => channel.sendMessage(message) }
   }
 }
 
 object ChannelTable {
-  def fromPartitionTable(partitionTable: PartitionTable) = {
+  def fromPartitionTable(partitionTable: PartitionTable): ChannelTable = {
     val channels = partitionTable.slaveRanges.zipWithIndex.map {
       case (slaveRange, i) =>
         new Channel(Slave(i), slaveRange.slave)
@@ -115,24 +115,21 @@ class MessageListener(bindAddress: InetSocketAddress) {
   private val socket = serverChannel.socket
   socket.bind(bindAddress)
 
-  type MessageHandler = Message => Unit
+  type MessageHandler = Message => Future[Unit]
   private var messageHandler: MessageHandler = {
-    _ => ()
+    _ => Future()
   }
 
-  def replaceHandler(handler: MessageHandler) = {
+  def replaceHandler(handler: MessageHandler): Unit = {
     messageHandler = handler
   }
 
-  var remainBytes = ArrayBuffer[Byte]()
-
-  def start() = {
+  def start(): Subscription = {
     serverChannel.register(selector, SelectionKey.OP_ACCEPT)
 
     val serverSubscription = runServer()
-    val messageConsumerSubscription = runMessageConsumer()
 
-    Subscription(serverSubscription, messageConsumerSubscription)
+    serverSubscription
   }
 
   private def runServer() = {
@@ -160,48 +157,7 @@ class MessageListener(bindAddress: InetSocketAddress) {
     }
   }
 
-  private def runMessageConsumer() = {
-    def tryReadMessage(): Option[Message] = {
-      val Overhead = 5
-      if (remainBytes.length >= Overhead) {
-        val lengthBuffer = new Array[Byte](Overhead)
-        remainBytes.synchronized {
-          remainBytes.copyToArray(lengthBuffer, 0, Overhead)
-
-          //TODO: update this part for performance improvement
-          val byteStream = new ByteArrayInputStream(lengthBuffer)
-          val dataStream = new DataInputStream(byteStream)
-
-          val messageType = dataStream.readByte()
-          val dataLength = dataStream.readInt()
-
-          dataStream.close()
-          byteStream.close()
-
-          if (remainBytes.length >= Overhead + dataLength) {
-            val dataBuffer = new Array[Byte](dataLength)
-            remainBytes.remove(0, Overhead)
-            remainBytes.copyToArray(dataBuffer, 0, dataLength)
-            remainBytes.remove(0, dataLength)
-            Some(new Message(MessageType(messageType), dataBuffer))
-          } else None
-        }
-      } else None
-    }
-
-    Future.run() {
-      ct => Future {
-        blocking {
-          while (ct.nonCancelled) {
-            tryReadMessage() match {
-              case Some(message) => messageHandler(message)
-              case _ => ()
-            }
-          }
-        }
-      }
-    }
-  }
+  private val hashMap = mutable.HashMap.empty[SocketChannel, ByteBuffer]
 
   private def accept(key: SelectionKey) = {
     key.channel match {
@@ -209,25 +165,49 @@ class MessageListener(bindAddress: InetSocketAddress) {
         val socketChannel = server.accept
         socketChannel.configureBlocking(false)
         socketChannel.register(selector, SelectionKey.OP_READ)
+        hashMap += (socketChannel -> ByteBuffer.allocateDirect(Setting.BufferSize))
     }
   }
 
   private def read(key: SelectionKey) = {
     key.channel match {
       case socketChannel: SocketChannel =>
-          val buffer = ByteBuffer.allocateDirect(Setting.BufferSize)
-          val readBytes = socketChannel.read(buffer)
-          if (readBytes == -1) {
-            socketChannel.close()
-          } else {
-            MessageLogger.log(s"Read $readBytes bytes")
-            buffer.flip()
-            val bytes = new Array[Byte](buffer.remaining())
-            buffer.get(bytes)
-            remainBytes.synchronized {
-              remainBytes.appendAll(bytes)
+        val buffer = hashMap(socketChannel)
+        val readBytes = socketChannel.read(buffer)
+        if (readBytes == -1) {
+          hashMap -= socketChannel
+          socketChannel.close()
+        } else {
+          MessageLogger.log(s"Read $readBytes bytes")
+          var message = readMessage(buffer)
+          while (message.isDefined) {
+            messageHandler(message.get) onFailure {
+              case e =>
+                val logger = Logger("Message Handling Failed")
+                val sw = new StringWriter
+                e.printStackTrace(new PrintWriter(sw))
+                logger.error(sw.toString)
             }
+            message = readMessage(buffer)
           }
+        }
     }
+  }
+
+  private def readMessage(buffer: ByteBuffer): Option[Message] = {
+    val dup = buffer.duplicate()
+    dup.flip()
+    if (dup.remaining >= 5) {
+      val messageType = dup.get()
+      val messageLength = dup.getInt()
+      if (dup.remaining >= messageLength) {
+        val data = new Array[Byte](messageLength)
+        dup.get(data)
+        buffer.position(dup.position)
+        buffer.limit(dup.limit)
+        buffer.compact()
+        Some(new Message(MessageType(messageType), data))
+      } else None
+    } else None
   }
 }

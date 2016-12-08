@@ -6,7 +6,8 @@ import dsorting.primitive._
 import dsorting.serializer._
 import dsorting.states.master._
 
-import scala.concurrent.Promise
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.{Future, Promise}
 
 object ShufflingInitializer {
   def prepareShuffling(prevState: SamplingState)(partitionTable: PartitionTable): ShufflingState = {
@@ -14,14 +15,14 @@ object ShufflingInitializer {
     new TransitionFrom(prevState) with ShufflingState {
       val logger = Logger("Master Shuffling")
 
-      val partitionTable = _partitionTable
+      val partitionTable: PartitionTable = _partitionTable
       logger.debug(partitionTable.toString)
-      val channelTable = ChannelTable.fromPartitionTable(partitionTable)
+      val channelTable: ChannelTable = ChannelTable.fromPartitionTable(partitionTable)
 
       private var readyCount = numSlaves
       private var doneCount = numSlaves
 
-      def run() = {
+      def run(): Future[Unit] = {
         logger.info("start running")
 
         val p = Promise[Unit]()
@@ -44,10 +45,12 @@ object ShufflingInitializer {
         }
 
         listener.replaceHandler {
-          message => message.messageType match {
-            case MessageType.ShufflingReady => receiveShufflingReady()
-            case MessageType.ShufflingDone => receiveShufflingDone()
-            case _ => ()
+          message => Future {
+            message.messageType match {
+              case MessageType.ShufflingReady => receiveShufflingReady()
+              case MessageType.ShufflingDone => receiveShufflingDone()
+              case _ => ()
+            }
           }
         }
 

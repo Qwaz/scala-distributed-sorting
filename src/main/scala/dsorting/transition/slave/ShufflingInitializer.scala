@@ -18,15 +18,15 @@ object ShufflingInitializer {
     new TransitionFrom(prevState) with ShufflingState {
       val logger = Logger("Slave Shuffling")
 
-      val partitionTable = _partitionTable
-      val channelTable = ChannelTable.fromPartitionTable(partitionTable)
+      val partitionTable: PartitionTable = _partitionTable
+      val channelTable: ChannelTable = ChannelTable.fromPartitionTable(partitionTable)
 
       private val ShufflingPrefix = "shuffling"
       private val outputDirectory = Directory(ioDirectoryInfo.outputDirectory)
       outputDirectory.deleteFilesWithPrefix(ShufflingPrefix)
       private val entryWriter = new FileEntryWriter(outputDirectory.createTemporaryFileWithPrefix(ShufflingPrefix))
 
-      def run() = {
+      def run(): Future[Unit] = {
         logger.info("start running")
 
         val p = Promise[Unit]()
@@ -46,15 +46,18 @@ object ShufflingInitializer {
 
         def receiveShuffle(data: Array[Byte]) = {
           val entry = EntrySerializer.fromByteArray(data)
+          // logger.debug(s"entry received $entry")
           entryWriter.writeEntry(entry)
         }
 
         listener.replaceHandler {
-          message => message.messageType match {
-            case MessageType.ShufflingStart => receiveShufflingStart()
-            case MessageType.ShufflingComplete => receiveShufflingComplete()
-            case MessageType.Shuffle => receiveShuffle(message.data)
-            case _ => ()
+          message => Future {
+            message.messageType match {
+              case MessageType.ShufflingStart => receiveShufflingStart()
+              case MessageType.ShufflingComplete => receiveShufflingComplete()
+              case MessageType.Shuffle => receiveShuffle(message.data)
+              case _ => ()
+            }
           }
         }
 

@@ -1,7 +1,6 @@
 package dsorting.transition.master
 
 import java.net.InetSocketAddress
-import java.nio.charset.Charset
 
 import com.typesafe.scalalogging.Logger
 import dsorting.Setting
@@ -11,7 +10,8 @@ import dsorting.serializer._
 import dsorting.states.master._
 
 import scala.collection.mutable.ArrayBuffer
-import scala.concurrent.Promise
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.{Future, Promise}
 
 object SamplingInitializer {
   def prepareSampling(numSlaves: Integer): SamplingState = {
@@ -19,7 +19,7 @@ object SamplingInitializer {
     new FreshState(Setting.MasterPort) with SamplingState {
       val logger = Logger("Master Sampling")
 
-      val numSlaves = _numSlaves
+      val numSlaves: Int = _numSlaves
       logger.debug(s"numSlaves $numSlaves")
 
       private var remainingSlaves = numSlaves
@@ -27,7 +27,7 @@ object SamplingInitializer {
       private val slaveAddresses = ArrayBuffer[InetSocketAddress]()
       private val sampleKeys = ArrayBuffer[Key](Key(Array[Byte](0, 0, 0, 0, 0, 0, 0, 0, 0, 0)))
 
-      def run() = {
+      def run(): Future[PartitionTable] = {
         logger.info("start running")
 
         val p = Promise[PartitionTable]()
@@ -46,10 +46,12 @@ object SamplingInitializer {
         }
 
         listener.replaceHandler {
-          message => message.messageType match {
-            case MessageType.Introduce => receiveIntroduce(message.data)
-            case MessageType.SampleData => receiveSampleData(message.data)
-            case _ => ()
+          message => Future {
+            message.messageType match {
+              case MessageType.Introduce => receiveIntroduce(message.data)
+              case MessageType.SampleData => receiveSampleData(message.data)
+              case _ => ()
+            }
           }
         }
 
@@ -58,7 +60,6 @@ object SamplingInitializer {
 
       private def createPartitionTable() = {
         val sortedKeys = sampleKeys.sortWith(_ <= _)
-        logger.debug(sortedKeys.toString)
         val step = sortedKeys.length / numSlaves
         val slaveRanges = slaveAddresses.zipWithIndex.map {
           case (socketAddress, i) => new SlaveRange(socketAddress, sortedKeys(i*step))

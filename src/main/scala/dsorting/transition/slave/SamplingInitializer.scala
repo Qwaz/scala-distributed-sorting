@@ -9,14 +9,15 @@ import dsorting.serializer._
 import dsorting.states.slave._
 
 import scala.collection.mutable
-import scala.concurrent.Promise
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.{Future, Promise}
 
 object SamplingInitializer {
   def prepareSampling(slaveStartupInfo: SlaveStartupInfo): SamplingState = {
     new FreshState(slaveStartupInfo) with SamplingState {
       val logger = Logger("Slave Sampling")
 
-      def run() = {
+      def run(): Future[PartitionTable] = {
         logger.info("start running")
 
         val p = Promise[PartitionTable]()
@@ -28,9 +29,11 @@ object SamplingInitializer {
         }
 
         listener.replaceHandler{
-          message => message.messageType match {
-            case MessageType.PartitionData => receivePartitionData(message.data)
-            case _ => ()
+          message => Future {
+            message.messageType match {
+              case MessageType.PartitionData => receivePartitionData(message.data)
+              case _ => ()
+            }
           }
         }
 
