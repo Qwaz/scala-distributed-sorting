@@ -12,7 +12,7 @@ trait MasterState[T] extends State[T] {
   val listener: MessageListener
   val listenerSubscription: Subscription
 
-  val numSlaves: Integer
+  val numSlaves: Int
 }
 
 
@@ -24,7 +24,7 @@ trait ShufflingState extends MasterState[Unit] {
 }
 
 
-class FreshState(port: Integer) {
+class FreshState(port: Int) {
   private val masterAddress = new InetSocketAddress(InetAddress.getLocalHost.getHostAddress, Setting.MasterPort)
 
   val listener = new MessageListener(masterAddress)

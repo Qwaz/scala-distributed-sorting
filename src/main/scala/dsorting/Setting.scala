@@ -8,7 +8,7 @@ object Setting {
   http://stackoverflow.com/a/13826145
   port availability check
    */
-  private def portAvailable(port: Integer) = {
+  private def portAvailable(port: Int) = {
     val s = new Socket()
     try {
       s.connect(new InetSocketAddress(InetAddress.getLocalHost, port))
@@ -26,7 +26,7 @@ object Setting {
     }
   }
 
-  private def nextAvailablePort(port: Integer): Integer = {
+  private def nextAvailablePort(port: Int): Int = {
     if (portAvailable(port)) port
     else nextAvailablePort(port+1)
   }

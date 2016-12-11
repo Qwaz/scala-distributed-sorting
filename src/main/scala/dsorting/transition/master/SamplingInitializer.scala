@@ -14,7 +14,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Future, Promise}
 
 object SamplingInitializer {
-  def prepareSampling(numSlaves: Integer): SamplingState = {
+  def prepareSampling(numSlaves: Int): SamplingState = {
     val _numSlaves = numSlaves
     new FreshState(Setting.MasterPort) with SamplingState {
       val logger = Logger("Master Sampling")

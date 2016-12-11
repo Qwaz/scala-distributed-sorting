@@ -57,7 +57,7 @@ abstract class Identity
 case object Master extends Identity {
   override def toString: String = "Master"
 }
-case class Slave(index: Integer) extends Identity {
+case class Slave(index: Int) extends Identity {
   override def toString: String = s"Slave $index"
 }
 

@@ -33,7 +33,7 @@ object Directory {
 
 trait EntryReader extends Iterator[Entry] {
   def numEntries: Long
-  def remainingEntries: Integer
+  def remainingEntries: Int
 }
 
 class FileEntryReader(val file: File) extends EntryReader with AutoCloseable {

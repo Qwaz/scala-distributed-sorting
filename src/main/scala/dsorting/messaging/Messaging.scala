@@ -86,7 +86,7 @@ class Channel(val identity: Identity, address: SocketAddress) {
 }
 
 class ChannelTable(val channels: IndexedSeq[Channel]) {
-  def apply(index: Integer): Channel = channels(index)
+  def apply(index: Int): Channel = channels(index)
 
   def broadcast(message: Message): Unit = {
     channels.foreach { channel => channel.sendMessage(message) }
