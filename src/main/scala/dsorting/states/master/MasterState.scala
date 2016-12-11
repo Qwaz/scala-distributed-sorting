@@ -18,10 +18,9 @@ trait MasterState[T] extends State[T] {
 
 trait SamplingState extends MasterState[PartitionTable]
 
-trait ShufflingState extends MasterState[Unit] {
-  val partitionTable: PartitionTable
-  val channelTable: ChannelTable
-}
+trait PartitioningState extends MasterState[Unit] with ConnectedWorkers
+
+trait ShufflingState extends MasterState[Unit] with ConnectedWorkers
 
 
 class FreshState(port: Int) {
@@ -39,4 +38,9 @@ class TransitionFrom[T](prevState: MasterState[T]) {
   val listenerSubscription: Subscription = prevState.listenerSubscription
 
   val numSlaves = prevState.numSlaves
+}
+
+class TransitionFromConnected[T](prevState: MasterState[T] with ConnectedWorkers) extends TransitionFrom[T](prevState) {
+  val partitionTable: PartitionTable = prevState.partitionTable
+  val channelTable: ChannelTable = prevState.channelTable
 }

@@ -1,6 +1,6 @@
 package dsorting.messaging
 
-import java.io.{ByteArrayOutputStream, DataOutputStream, PrintWriter, StringWriter}
+import java.io.{ByteArrayOutputStream, DataOutputStream}
 import java.net.{InetSocketAddress, Socket, SocketAddress}
 import java.nio.ByteBuffer
 import java.nio.channels.{SelectionKey, Selector, ServerSocketChannel, SocketChannel}
@@ -12,7 +12,7 @@ import dsorting.primitive._
 
 import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.{Future, blocking}
+import scala.concurrent.Future
 
 object MessageLogger {
   def log(msg: String): Unit = {
@@ -29,14 +29,17 @@ object MessageType extends Enumeration {
   type MessageType = Value
 
   // Sampling
-  val Introduce = Value
-  val SampleData = Value
-  val PartitionData = Value
+  val SamplingIntroduce = Value
+  val SamplingSamples = Value
+  val SamplingPartitionTable = Value
+
+  // Partitioning
+  val PartitioningDone = Value
+  val PartitioningComplete = Value
 
   // Shuffling
   val ShufflingReady = Value
   val ShufflingStart = Value
-  val Shuffle = Value
   val ShufflingDone = Value
   val ShufflingComplete = Value
 
@@ -115,9 +118,9 @@ class MessageListener(bindAddress: InetSocketAddress) {
   private val socket = serverChannel.socket
   socket.bind(bindAddress)
 
-  type MessageHandler = Message => Future[Unit]
+  type MessageHandler = (Message, Futurama) => Future[Unit]
   private var messageHandler: MessageHandler = {
-    _ => Future()
+    (_, _) => Future()
   }
 
   def replaceHandler(handler: MessageHandler): Unit = {
@@ -135,29 +138,28 @@ class MessageListener(bindAddress: InetSocketAddress) {
   private def runServer() = {
     Future.run() {
       ct => Future {
-        blocking {
-          while (ct.nonCancelled) {
-            selector.select
+        while (ct.nonCancelled) {
+          selector.select
 
-            val it = selector.selectedKeys.iterator
-            while (it.hasNext) {
-              val key = it.next
-              if (key.isAcceptable) {
-                accept(key)
-              }
-              if (key.isReadable) {
-                read(key)
-              }
-              it.remove()
+          val it = selector.selectedKeys.iterator
+          while (it.hasNext) {
+            val key = it.next
+            if (key.isAcceptable) {
+              accept(key)
             }
+            if (key.isReadable) {
+              read(key)
+            }
+            it.remove()
           }
-          socket.close()
         }
+        socket.close()
       }
     }
   }
 
-  private val hashMap = mutable.HashMap.empty[SocketChannel, ByteBuffer]
+  private val byteBufferMap = mutable.HashMap.empty[SocketChannel, ByteBuffer]
+  private val futurama = new Futurama()
 
   private def accept(key: SelectionKey) = {
     key.channel match {
@@ -165,29 +167,23 @@ class MessageListener(bindAddress: InetSocketAddress) {
         val socketChannel = server.accept
         socketChannel.configureBlocking(false)
         socketChannel.register(selector, SelectionKey.OP_READ)
-        hashMap += (socketChannel -> ByteBuffer.allocateDirect(Setting.BufferSize))
+        byteBufferMap += (socketChannel -> ByteBuffer.allocateDirect(Setting.BufferSize))
     }
   }
 
   private def read(key: SelectionKey) = {
     key.channel match {
       case socketChannel: SocketChannel =>
-        val buffer = hashMap(socketChannel)
+        val buffer = byteBufferMap(socketChannel)
         val readBytes = socketChannel.read(buffer)
         if (readBytes == -1) {
-          hashMap -= socketChannel
+          byteBufferMap -= socketChannel
           socketChannel.close()
         } else {
           MessageLogger.log(s"Read $readBytes bytes")
           var message = readMessage(buffer)
           while (message.isDefined) {
-            messageHandler(message.get) onFailure {
-              case e =>
-                val logger = Logger("Message Handling Failed")
-                val sw = new StringWriter
-                e.printStackTrace(new PrintWriter(sw))
-                logger.error(sw.toString)
-            }
+            messageHandler(message.get, futurama).logError("Message Handling Failed")
             message = readMessage(buffer)
           }
         }

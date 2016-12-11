@@ -4,6 +4,7 @@ import java.net.{InetAddress, InetSocketAddress}
 
 import com.typesafe.scalalogging.Logger
 import dsorting.Setting
+import dsorting.diskio.EntryReader
 import dsorting.future.Subscription
 import dsorting.messaging._
 import dsorting.primitive._
@@ -22,10 +23,9 @@ trait SlaveState[T] extends State[T] {
 
 trait SamplingState extends SlaveState[PartitionTable]
 
-trait ShufflingState extends SlaveState[Unit] {
-  val partitionTable: PartitionTable
-  val channelTable: ChannelTable
-}
+trait PartitioningState extends SlaveState[IndexedSeq[EntryReader]] with ConnectedWorkers
+
+trait ShufflingState extends SlaveState[Unit] with ConnectedWorkers
 
 
 class FreshState(slaveStartupInfo: SlaveStartupInfo) {
@@ -52,4 +52,9 @@ class TransitionFrom[T](prevState: SlaveState[T]) {
   val channelToMaster = prevState.channelToMaster
 
   val ioDirectoryInfo = prevState.ioDirectoryInfo
+}
+
+class TransitionFromConnected[T](prevState: SlaveState[T] with ConnectedWorkers) extends TransitionFrom[T](prevState) {
+  val partitionTable: PartitionTable = prevState.partitionTable
+  val channelTable: ChannelTable = prevState.channelTable
 }

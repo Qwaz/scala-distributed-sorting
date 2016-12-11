@@ -4,6 +4,7 @@ import java.net.InetSocketAddress
 import javax.xml.bind.DatatypeConverter
 
 import dsorting.Setting
+import dsorting.messaging.ChannelTable
 
 import scala.concurrent.Future
 
@@ -90,4 +91,9 @@ class PartitionTable(val identity: Identity, val slaveRanges: IndexedSeq[SlaveRa
 
 trait State[T] {
   def run(): Future[T]
+}
+
+trait ConnectedWorkers {
+  val partitionTable: PartitionTable
+  val channelTable: ChannelTable
 }

@@ -22,17 +22,17 @@ object SamplingInitializer {
 
         val p = Promise[PartitionTable]()
 
-        def receivePartitionData(data: Array[Byte]) = {
+        def receivePartitionData(data: Array[Byte]): Unit = {
           val partitionTable = PartitionTableSerializer.fromByteArray(data)
           logger.debug(partitionTable.toString)
           p.success(partitionTable)
         }
 
         listener.replaceHandler{
-          message => Future {
+          (message, futurama) => {
             message.messageType match {
-              case MessageType.PartitionData => receivePartitionData(message.data)
-              case _ => ()
+              case MessageType.SamplingPartitionTable => futurama.executeImmediately(receivePartitionData, message.data)
+              case _ => Future()
             }
           }
         }
@@ -45,7 +45,7 @@ object SamplingInitializer {
 
       private def introduce() = {
         channelToMaster.sendMessage(new Message(
-          MessageType.Introduce,
+          MessageType.SamplingIntroduce,
           InetSocketAddressSerializer.toByteArray(selfAddress)
         ))
       }
@@ -69,7 +69,7 @@ object SamplingInitializer {
         }
 
         channelToMaster.sendMessage(new Message(
-          MessageType.SampleData,
+          MessageType.SamplingSamples,
           KeyListSerializer.toByteArray(keys)
         ))
       }

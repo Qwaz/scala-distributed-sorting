@@ -32,13 +32,13 @@ object SamplingInitializer {
 
         val p = Promise[PartitionTable]()
 
-        def receiveIntroduce(data: Array[Byte]) = {
+        def receiveIntroduce(data: Array[Byte]): Unit = {
           val slaveAddress = InetSocketAddressSerializer.fromByteArray(data)
           slaveAddresses += slaveAddress
           logger.debug(s"introduce data received from $slaveAddress")
         }
 
-        def receiveSampleData(data: Array[Byte]) = {
+        def receiveSampleData(data: Array[Byte]): Unit = {
           sampleKeys ++= KeyListSerializer.fromByteArray(data)
           remainingSlaves -= 1
           logger.debug(s"sample data received: $remainingSlaves remains")
@@ -46,11 +46,11 @@ object SamplingInitializer {
         }
 
         listener.replaceHandler {
-          message => Future {
+          (message, futurama) => {
             message.messageType match {
-              case MessageType.Introduce => receiveIntroduce(message.data)
-              case MessageType.SampleData => receiveSampleData(message.data)
-              case _ => ()
+              case MessageType.SamplingIntroduce => futurama.executeAfter("Sampling Introduce")(receiveIntroduce, message.data)
+              case MessageType.SamplingSamples => futurama.executeAfter("Sampling Samples")(receiveSampleData, message.data)
+              case _ => Future()
             }
           }
         }

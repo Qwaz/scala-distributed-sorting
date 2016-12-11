@@ -12,7 +12,10 @@ object MasterApp extends App {
 
   val samplingState =
     ArgumentParser.parseArgument(args) -> SamplingInitializer.prepareSampling
-  val shufflingState = samplingState flatMap {
+  val partitioningState = samplingState flatMap {
+    state => state.run() -> PartitioningInitializer.preparePartitioning(state)
+  }
+  val shufflingState = partitioningState flatMap {
     state => state.run() -> ShufflingInitializer.prepareShuffling(state)
   }
   val result = shufflingState flatMap {

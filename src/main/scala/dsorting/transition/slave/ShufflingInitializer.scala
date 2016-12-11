@@ -1,25 +1,17 @@
 package dsorting.transition.slave
 
 import com.typesafe.scalalogging.Logger
-import dsorting.Setting
-import dsorting.diskio.{Directory, FileEntryReader, FileEntryWriter}
+import dsorting.diskio._
 import dsorting.messaging._
-import dsorting.primitive._
-import dsorting.serializer.EntrySerializer
 import dsorting.states.slave._
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.{Future, Promise, blocking}
-import scala.util.{Failure, Success}
+import scala.concurrent.{Future, Promise}
 
 object ShufflingInitializer {
-  def prepareShuffling(prevState: SamplingState)(partitionTable: PartitionTable): ShufflingState = {
-    val _partitionTable = partitionTable
-    new TransitionFrom(prevState) with ShufflingState {
+  def prepareShuffling(prevState: PartitioningState)(entryReaders: IndexedSeq[EntryReader]): ShufflingState = {
+    new TransitionFromConnected(prevState) with ShufflingState {
       val logger = Logger("Slave Shuffling")
-
-      val partitionTable: PartitionTable = _partitionTable
-      val channelTable: ChannelTable = ChannelTable.fromPartitionTable(partitionTable)
 
       private val ShufflingPrefix = "shuffling"
       private val outputDirectory = Directory(ioDirectoryInfo.outputDirectory)
@@ -31,32 +23,24 @@ object ShufflingInitializer {
 
         val p = Promise[Unit]()
 
-        def receiveShufflingStart() = {
-          logger.debug(s"shuffling start")
-          performShuffling() onComplete {
-            case Success(_) => channelToMaster.sendMessage(Message.withType(MessageType.ShufflingDone))
-            case Failure(e) => p.failure(e)
-          }
+        def receiveShufflingStart(data: Array[Byte]): Unit = {
+          logger.debug("shuffling start")
+          // TODO: replace with shuffling start code
+          channelToMaster.sendMessage(Message.withType(MessageType.ShufflingDone))
         }
 
-        def receiveShufflingComplete() = {
-          logger.debug(s"shuffling complete")
+        def receiveShufflingComplete(data: Array[Byte]): Unit = {
+          logger.debug("shuffling complete")
           p.success(())
         }
 
-        def receiveShuffle(data: Array[Byte]) = {
-          val entry = EntrySerializer.fromByteArray(data)
-          // logger.debug(s"entry received $entry")
-          entryWriter.writeEntry(entry)
-        }
-
         listener.replaceHandler {
-          message => Future {
+          (message, futurama) => {
             message.messageType match {
-              case MessageType.ShufflingStart => receiveShufflingStart()
-              case MessageType.ShufflingComplete => receiveShufflingComplete()
-              case MessageType.Shuffle => receiveShuffle(message.data)
-              case _ => ()
+              // TODO: handle shuffling data
+              case MessageType.ShufflingStart => futurama.executeImmediately(receiveShufflingStart, message.data)
+              case MessageType.ShufflingComplete => futurama.executeImmediately(receiveShufflingComplete, message.data)
+              case _ => Future()
             }
           }
         }
@@ -68,24 +52,6 @@ object ShufflingInitializer {
 
       private def sendReady() = {
         channelToMaster.sendMessage(Message.withType(MessageType.ShufflingReady))
-      }
-
-      private def performShuffling() = Future {
-        blocking {
-          for (directoryName <- ioDirectoryInfo.inputDirectories) {
-            val directory = Directory(directoryName)
-            val inputFiles = directory.listFilesWithPrefix(Setting.InputFilePrefix)
-            for (inputFile <- inputFiles) {
-              val reader = new FileEntryReader(inputFile)
-              while (reader.hasNext) {
-                val entry = reader.next()
-                val slaveIndex = partitionTable.findSlaveIndexForKey(entry.key)
-                channelTable(slaveIndex).sendMessage(new Message(MessageType.Shuffle, EntrySerializer.toByteArray(entry)))
-              }
-              reader.close()
-            }
-          }
-        }
       }
 
       logger.info("initialized")

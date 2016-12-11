@@ -2,22 +2,15 @@ package dsorting.transition.master
 
 import com.typesafe.scalalogging.Logger
 import dsorting.messaging._
-import dsorting.primitive._
-import dsorting.serializer._
 import dsorting.states.master._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Future, Promise}
 
 object ShufflingInitializer {
-  def prepareShuffling(prevState: SamplingState)(partitionTable: PartitionTable): ShufflingState = {
-    val _partitionTable = partitionTable
-    new TransitionFrom(prevState) with ShufflingState {
+  def prepareShuffling(prevState: PartitioningState)(unit: Unit): ShufflingState = {
+    new TransitionFromConnected(prevState) with ShufflingState {
       val logger = Logger("Master Shuffling")
-
-      val partitionTable: PartitionTable = _partitionTable
-      logger.debug(partitionTable.toString)
-      val channelTable: ChannelTable = ChannelTable.fromPartitionTable(partitionTable)
 
       private var readyCount = numSlaves
       private var doneCount = numSlaves
@@ -27,7 +20,7 @@ object ShufflingInitializer {
 
         val p = Promise[Unit]()
 
-        def receiveShufflingReady() = {
+        def receiveShufflingReady(data: Array[Byte]): Unit = {
           readyCount -= 1
           logger.debug(s"shuffling ready received: $readyCount remains")
           if (readyCount == 0) {
@@ -35,7 +28,7 @@ object ShufflingInitializer {
           }
         }
 
-        def receiveShufflingDone() = {
+        def receiveShufflingDone(data: Array[Byte]): Unit = {
           doneCount -= 1
           logger.debug(s"shuffling done received: $doneCount remains")
           if (doneCount == 0) {
@@ -45,30 +38,16 @@ object ShufflingInitializer {
         }
 
         listener.replaceHandler {
-          message => Future {
+          (message, futurama) => {
             message.messageType match {
-              case MessageType.ShufflingReady => receiveShufflingReady()
-              case MessageType.ShufflingDone => receiveShufflingDone()
-              case _ => ()
+              case MessageType.ShufflingReady => futurama.executeAfter("Shuffling Ready")(receiveShufflingReady, message.data)
+              case MessageType.ShufflingDone => futurama.executeAfter("Shuffling Done")(receiveShufflingDone, message.data)
+              case _ => Future()
             }
           }
         }
 
-        broadcastPartitionTable()
-
         p.future
-      }
-
-      private def broadcastPartitionTable() = {
-        channelTable.channels.zipWithIndex.foreach {
-          case (channel, i) =>
-            channel.sendMessage(new Message(
-              MessageType.PartitionData,
-              PartitionTableSerializer.toByteArray(
-                new PartitionTable(Slave(i), partitionTable.slaveRanges)
-              )
-            ))
-        }
       }
 
       logger.info("initialized")
