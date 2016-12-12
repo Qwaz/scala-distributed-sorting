@@ -18,7 +18,10 @@ object MasterApp extends App {
   val shufflingState = partitioningState flatMap {
     state => state.run() -> ShufflingInitializer.prepareShuffling(state)
   }
-  val result = shufflingState flatMap {
+  val sortingState = shufflingState flatMap {
+    state => state.run() -> SortingInitializer.prepareSorting(state)
+  }
+  val result = sortingState flatMap {
     state => state.run() -> { _ => p.success(()) }
   }
   result onFailure { case e => p.tryFailure(e) }

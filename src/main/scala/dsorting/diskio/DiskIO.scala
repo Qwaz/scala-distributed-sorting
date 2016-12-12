@@ -1,9 +1,28 @@
 package dsorting.diskio
 
 import java.io.{File, FileInputStream, FileOutputStream, FilenameFilter}
+import java.nio.channels.FileChannel
+import java.nio.file.StandardOpenOption
 
 import dsorting.Setting
 import dsorting.primitive._
+
+object FileUtil {
+  def mergeFiles(inputFiles: Seq[File], outputFile: File): Unit = {
+    val outChannel = FileChannel.open(outputFile.toPath, StandardOpenOption.CREATE, StandardOpenOption.WRITE)
+    for (inputFile <- inputFiles) {
+      val inChannel = FileChannel.open(inputFile.toPath, StandardOpenOption.READ)
+
+      val inFileSize = inChannel.size()
+      var position = 0L
+      while (position < inFileSize) {
+        position += inChannel.transferTo(position, inFileSize-position, outChannel)
+      }
+      inChannel.close()
+    }
+    outChannel.close()
+  }
+}
 
 class Directory(path: String) {
   private val folder = new File(path)
@@ -17,6 +36,10 @@ class Directory(path: String) {
 
   def createTemporaryFileWithPrefix(prefix: String) = {
     File.createTempFile(prefix, "", folder)
+  }
+
+  def createResultFile(slaveIndex: Int) = {
+    new File(folder, s"result.$slaveIndex")
   }
 
   def deleteFilesWithPrefix(prefix: String) = {

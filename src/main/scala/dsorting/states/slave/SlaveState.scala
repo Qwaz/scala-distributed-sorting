@@ -1,6 +1,6 @@
 package dsorting.states.slave
 
-import java.io.FileInputStream
+import java.io.{File, FileInputStream}
 import java.net.{InetAddress, InetSocketAddress}
 
 import com.typesafe.scalalogging.Logger
@@ -25,7 +25,9 @@ trait SamplingState extends SlaveState[PartitionTable]
 
 trait PartitioningState extends SlaveState[IndexedSeq[FileInputStream]] with ConnectedWorkers
 
-trait ShufflingState extends SlaveState[Unit] with ConnectedWorkers
+trait ShufflingState extends SlaveState[File] with ConnectedWorkers
+
+trait SortingState extends SlaveState[Unit] with ConnectedWorkers
 
 
 class FreshState(slaveStartupInfo: SlaveStartupInfo) {

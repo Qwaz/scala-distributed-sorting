@@ -45,6 +45,9 @@ object Setting {
   val ShufflingChunkSize = EntrySize * 3000
   assert(ShufflingChunkSize % EntrySize == 0)
 
+  val InMemorySortingBound = 1024 * 1024 * 256 // 256 MiB
+  val DeleteTemporarySortingFiles = true
+
   val InputFilePrefix = "input"
 
   val NumSamples = 10

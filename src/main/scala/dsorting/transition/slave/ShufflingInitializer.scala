@@ -1,6 +1,6 @@
 package dsorting.transition.slave
 
-import java.io.{FileInputStream, FileOutputStream}
+import java.io.{File, FileInputStream, FileOutputStream}
 
 import com.typesafe.scalalogging.Logger
 import dsorting.Setting
@@ -23,7 +23,8 @@ object ShufflingInitializer {
       private val ShufflingPrefix = "shuffling"
       private val outputDirectory = Directory(ioDirectoryInfo.outputDirectory)
       outputDirectory.deleteFilesWithPrefix(ShufflingPrefix)
-      private val entryOutputStream = new FileOutputStream(outputDirectory.createTemporaryFileWithPrefix(ShufflingPrefix))
+      private val outputFile = outputDirectory.createTemporaryFileWithPrefix(ShufflingPrefix)
+      private val entryOutputStream = new FileOutputStream(outputFile)
 
       private var receiveDoneCount = partitionTable.slaveRanges.length
       private val mySlaveIndex = {
@@ -33,10 +34,10 @@ object ShufflingInitializer {
         }
       }
 
-      def run(): Future[Unit] = {
+      def run(): Future[File] = {
         logger.info("start running")
 
-        val p = Promise[Unit]()
+        val p = Promise[File]()
 
         def receiveShufflingStart(data: Array[Byte]): Unit = {
           logger.debug("shuffling start")
@@ -48,7 +49,7 @@ object ShufflingInitializer {
 
         def receiveShufflingComplete(data: Array[Byte]): Unit = {
           logger.debug("shuffling complete")
-          p.success(())
+          p.success(outputFile)
         }
 
         def receiveShufflingData(data: Array[Byte]): Unit = {

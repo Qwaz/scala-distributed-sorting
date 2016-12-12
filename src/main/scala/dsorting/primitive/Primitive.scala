@@ -54,6 +54,16 @@ object Value {
   }
 }
 
+case class Entry(key: Key, value: Value) {
+  override def toString: String = {
+    s"Entry ($key $value)"
+  }
+
+  def <= (entry: Entry) = {
+    key <= entry.key
+  }
+}
+
 object BufferFactory {
   val size0 = new Array[Byte](0)
   def emptyKeyBuffer() = new Array[Byte](Setting.KeySize)
@@ -65,12 +75,6 @@ class IODirectoryInfo(val inputDirectories: List[String], val outputDirectory: S
 }
 
 class SlaveStartupInfo(val masterAddress: InetSocketAddress, val ioDirectoryInfo: IODirectoryInfo)
-
-case class Entry(key: Key, value: Value) {
-  override def toString: String = {
-    s"Entry ($key $value)"
-  }
-}
 
 abstract class Identity
 case object Master extends Identity {
