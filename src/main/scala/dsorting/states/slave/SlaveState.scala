@@ -1,10 +1,10 @@
 package dsorting.states.slave
 
+import java.io.FileInputStream
 import java.net.{InetAddress, InetSocketAddress}
 
 import com.typesafe.scalalogging.Logger
 import dsorting.Setting
-import dsorting.diskio.EntryReader
 import dsorting.future.Subscription
 import dsorting.messaging._
 import dsorting.primitive._
@@ -23,7 +23,7 @@ trait SlaveState[T] extends State[T] {
 
 trait SamplingState extends SlaveState[PartitionTable]
 
-trait PartitioningState extends SlaveState[IndexedSeq[EntryReader]] with ConnectedWorkers
+trait PartitioningState extends SlaveState[IndexedSeq[FileInputStream]] with ConnectedWorkers
 
 trait ShufflingState extends SlaveState[Unit] with ConnectedWorkers
 

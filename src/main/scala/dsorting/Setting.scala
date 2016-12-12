@@ -42,6 +42,9 @@ object Setting {
   val ValueSize = 90
   val EntrySize = KeySize + ValueSize
 
+  val ShufflingChunkSize = EntrySize * 3000
+  assert(ShufflingChunkSize % EntrySize == 0)
+
   val InputFilePrefix = "input"
 
   val NumSamples = 10

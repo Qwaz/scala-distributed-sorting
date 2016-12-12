@@ -2,9 +2,6 @@ package dsorting.serializer
 
 import java.io._
 import java.net.InetSocketAddress
-import javax.xml.bind.DatatypeConverter
-
-import com.typesafe.scalalogging.Logger
 
 object InetSocketAddressSerializer extends Serializer[InetSocketAddress] {
   override def toByteArray(target: InetSocketAddress): Array[Byte] = {

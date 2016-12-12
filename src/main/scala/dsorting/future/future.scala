@@ -65,26 +65,28 @@ package object future {
     }
   }
 
-  class Futurama {
-    val pool = mutable.HashMap.empty[String, Future[Unit]]
+  class Futurama[T] {
+    val pool = mutable.HashMap.empty[T, Future[Unit]]
 
-    def getFuture(poolName: String): Future[Unit] = {
-      if (!pool.contains(poolName))
-        pool += (poolName -> Future())
-      pool(poolName)
+    def getFuture(key: T): Future[Unit] = {
+      if (!pool.contains(key))
+        pool += (key -> Future())
+      pool(key)
     }
 
     def executeImmediately[A](func: A => Unit, param: A): Future[Unit] = {
       Future { func(param) }
     }
 
-    def executeAfter[A](poolName: String)(func: A => Unit, param: A): Future[Unit] = {
-      val prevFuture = getFuture(poolName)
-      val updatedFuture = prevFuture map {
-        _ => func(param)
+    def executeAfter[A](key: T)(func: A => Unit, param: A): Future[Unit] = {
+      pool.synchronized {
+        val prevFuture = getFuture(key)
+        val updatedFuture = prevFuture map {
+          _ => func(param)
+        }
+        pool.update(key, updatedFuture)
+        updatedFuture
       }
-      pool.update(poolName, updatedFuture)
-      updatedFuture
     }
   }
 }

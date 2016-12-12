@@ -42,6 +42,9 @@ object MessageType extends Enumeration {
   val ShufflingStart = Value
   val ShufflingDone = Value
   val ShufflingComplete = Value
+  val ShufflingData = Value
+  val ShufflingDataNext = Value
+  val ShufflingDataDone = Value
 
   // Sorting
   val SortingDone = Value
@@ -118,7 +121,7 @@ class MessageListener(bindAddress: InetSocketAddress) {
   private val socket = serverChannel.socket
   socket.bind(bindAddress)
 
-  type MessageHandler = (Message, Futurama) => Future[Unit]
+  type MessageHandler = (Message, Futurama[String]) => Future[Unit]
   private var messageHandler: MessageHandler = {
     (_, _) => Future()
   }
@@ -159,7 +162,7 @@ class MessageListener(bindAddress: InetSocketAddress) {
   }
 
   private val byteBufferMap = mutable.HashMap.empty[SocketChannel, ByteBuffer]
-  private val futurama = new Futurama()
+  private val futurama = new Futurama[String]()
 
   private def accept(key: SelectionKey) = {
     key.channel match {

@@ -1,5 +1,7 @@
 package dsorting.transition.slave
 
+import java.io.FileInputStream
+
 import com.typesafe.scalalogging.Logger
 import dsorting.Setting
 import dsorting.diskio._
@@ -26,19 +28,19 @@ object PartitioningInitializer {
       private val entryWriters = partitionTable.slaveRanges.map {
         _ => new FileEntryWriter(outputDirectory.createTemporaryFileWithPrefix(PartitioningPrefix))
       }
-      private val entryReaders =
+      private val entryInputStreams =
         entryWriters map {
-          entryWriter => new FileEntryReader(entryWriter.file)
+          entryWriter => new FileInputStream(entryWriter.file)
         }
 
-      def run(): Future[IndexedSeq[EntryReader]] = {
+      def run(): Future[IndexedSeq[FileInputStream]] = {
         logger.info("start running")
 
-        val p = Promise[IndexedSeq[EntryReader]]()
+        val p = Promise[IndexedSeq[FileInputStream]]()
 
         def receivePartitionComplete(data: Array[Byte]): Unit = {
           logger.debug("partitioning complete")
-          p.success(entryReaders)
+          p.success(entryInputStreams)
         }
 
         listener.replaceHandler {
