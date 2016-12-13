@@ -81,7 +81,7 @@ object SortingInitializer {
             val entryWriters = files.map(file => new FileEntryWriter(file))
             distributeEntriesToFiles(inputFile, entryWriters, (entry: Entry) => {
               val targetByte = entry.key.bytes(sortedPrefixNibble / 2)
-              if ((sortedPrefixNibble & 1) > 0) targetByte & 0x0F else targetByte >> 4
+              (if ((sortedPrefixNibble & 1) > 0) targetByte else targetByte >> 4) & 0x0F
             })
             entryWriters.foreach(_.close())
 
