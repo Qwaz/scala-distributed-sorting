@@ -39,7 +39,7 @@ class Directory(path: String) {
   }
 
   def createResultFile(slaveIndex: Int) = {
-    new File(folder, s"result.$slaveIndex")
+    new File(folder, s"partition.$slaveIndex")
   }
 
   def deleteFilesWithPrefix(prefix: String) = {

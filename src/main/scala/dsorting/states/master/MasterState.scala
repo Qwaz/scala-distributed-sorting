@@ -22,7 +22,7 @@ trait PartitioningState extends MasterState[Unit] with ConnectedWorkers
 
 trait ShufflingState extends MasterState[Unit] with ConnectedWorkers
 
-trait SortingState extends MasterState[Unit] with ConnectedWorkers
+trait SortingState extends MasterState[Seq[String]] with ConnectedWorkers
 
 
 class FreshState(port: Int) {

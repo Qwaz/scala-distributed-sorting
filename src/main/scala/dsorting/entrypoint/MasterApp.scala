@@ -22,7 +22,11 @@ object MasterApp extends App {
     state => state.run() -> SortingInitializer.prepareSorting(state)
   }
   val result = sortingState flatMap {
-    state => state.run() -> { _ => p.success(()) }
+    state => state.run() -> {
+      childList =>
+        println(childList.mkString(", "))
+        p.success(())
+    }
   }
   result onFailure { case e => p.tryFailure(e) }
 

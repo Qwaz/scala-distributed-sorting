@@ -14,17 +14,19 @@ object SortingInitializer {
 
       private var doneCount = numSlaves
 
-      def run(): Future[Unit] = {
+      def run(): Future[Seq[String]] = {
         logger.info("start running")
 
-        val p = Promise[Unit]()
+        val p = Promise[Seq[String]]()
 
         def receiveSortingDone(data: Array[Byte]): Unit = {
           doneCount -= 1
           logger.debug(s"sorting done received: $doneCount remains")
           if (doneCount == 0) {
             channelTable.broadcast(Message.withType(MessageType.SortingComplete))
-            p.success(())
+            p.success(partitionTable.slaveRanges.map {
+              slaveRange => slaveRange.slave.getAddress.toString.substring(1)
+            })
           }
         }
 
