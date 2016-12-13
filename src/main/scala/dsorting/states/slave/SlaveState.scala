@@ -1,6 +1,5 @@
 package dsorting.states.slave
 
-import java.io.{File, FileInputStream}
 import java.net.{InetAddress, InetSocketAddress}
 
 import com.typesafe.scalalogging.Logger
@@ -23,15 +22,6 @@ trait SlaveState[T] extends State[T] {
   val channelToMaster: Channel
   val ioDirectoryInfo: IODirectoryInfo
 }
-
-
-trait SamplingState extends SlaveState[PartitionTable]
-
-trait PartitioningState extends SlaveState[IndexedSeq[FileInputStream]] with ConnectedWorkers
-
-trait ShufflingState extends SlaveState[File] with ConnectedWorkers
-
-trait SortingState extends SlaveState[Unit] with ConnectedWorkers
 
 
 class FreshState(slaveStartupInfo: SlaveStartupInfo) {

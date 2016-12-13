@@ -4,9 +4,12 @@ import com.typesafe.scalalogging.Logger
 import dsorting.messaging._
 import dsorting.primitive._
 import dsorting.serializer.PartitionTableSerializer
+import dsorting.states.ConnectedWorkers
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Future, Promise}
+
+trait PartitioningState extends MasterState[Unit] with ConnectedWorkers
 
 object PartitioningStateFactory {
   def apply(prevState: SamplingState)(partitionTable: PartitionTable): PartitioningState = {

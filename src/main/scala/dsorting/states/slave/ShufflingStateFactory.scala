@@ -8,9 +8,12 @@ import dsorting.diskio._
 import dsorting.messaging._
 import dsorting.primitive._
 import dsorting.serializer.ShufflingDataSerializer
+import dsorting.states.ConnectedWorkers
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Future, Promise}
+
+trait ShufflingState extends SlaveState[File] with ConnectedWorkers
 
 class ShufflingData(val fromSlave: Int, val data: Array[Byte])
 

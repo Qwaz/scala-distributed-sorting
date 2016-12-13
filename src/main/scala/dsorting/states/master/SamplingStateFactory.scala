@@ -12,6 +12,8 @@ import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Future, Promise}
 
+trait SamplingState extends MasterState[PartitionTable]
+
 object SamplingStateFactory {
   def apply(numSlaves: Int): SamplingState = {
     val _numSlaves = numSlaves

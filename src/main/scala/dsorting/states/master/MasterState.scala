@@ -15,15 +15,6 @@ trait MasterState[T] extends State[T] {
 }
 
 
-trait SamplingState extends MasterState[PartitionTable]
-
-trait PartitioningState extends MasterState[Unit] with ConnectedWorkers
-
-trait ShufflingState extends MasterState[Unit] with ConnectedWorkers
-
-trait SortingState extends MasterState[Seq[String]] with ConnectedWorkers
-
-
 class FreshState(port: Int) {
   private val masterAddress = new InetSocketAddress(InetAddress.getLocalHost.getHostAddress, Setting.MasterPort)
 

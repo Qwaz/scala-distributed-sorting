@@ -7,9 +7,12 @@ import dsorting.Setting
 import dsorting.diskio._
 import dsorting.messaging._
 import dsorting.primitive._
+import dsorting.states.ConnectedWorkers
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Future, Promise}
+
+trait SortingState extends SlaveState[Unit] with ConnectedWorkers
 
 object SortingStateFactory {
   def apply(prevState: ShufflingState)(targetFile: File): SortingState = {

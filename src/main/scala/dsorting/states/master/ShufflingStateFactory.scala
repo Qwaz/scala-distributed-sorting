@@ -2,9 +2,12 @@ package dsorting.states.master
 
 import com.typesafe.scalalogging.Logger
 import dsorting.messaging._
+import dsorting.states.ConnectedWorkers
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Future, Promise}
+
+trait ShufflingState extends MasterState[Unit] with ConnectedWorkers
 
 object ShufflingStateFactory {
   def apply(prevState: PartitioningState)(unit: Unit): ShufflingState = {

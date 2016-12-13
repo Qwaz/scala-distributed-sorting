@@ -11,6 +11,8 @@ import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Future, Promise}
 
+trait SamplingState extends SlaveState[PartitionTable]
+
 object SamplingStateFactory {
   def apply(slaveStartupInfo: SlaveStartupInfo): SamplingState = {
     new FreshState(slaveStartupInfo) with SamplingState {
