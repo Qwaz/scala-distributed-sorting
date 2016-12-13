@@ -1,9 +1,8 @@
-package dsorting.transition.slave
+package dsorting.states.slave
 
 import java.net.{InetAddress, InetSocketAddress, URI, URISyntaxException}
 
 import dsorting.Setting
-import dsorting.primitive._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future

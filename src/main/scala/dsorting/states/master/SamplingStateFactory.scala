@@ -1,4 +1,4 @@
-package dsorting.transition.master
+package dsorting.states.master
 
 import java.net.InetSocketAddress
 
@@ -7,14 +7,13 @@ import dsorting.Setting
 import dsorting.messaging._
 import dsorting.primitive._
 import dsorting.serializer._
-import dsorting.states.master._
 
 import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Future, Promise}
 
-object SamplingInitializer {
-  def prepareSampling(numSlaves: Int): SamplingState = {
+object SamplingStateFactory {
+  def apply(numSlaves: Int): SamplingState = {
     val _numSlaves = numSlaves
     new FreshState(Setting.MasterPort) with SamplingState {
       val logger = Logger("Master Sampling")

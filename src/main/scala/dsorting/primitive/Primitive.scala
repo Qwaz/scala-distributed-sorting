@@ -5,9 +5,6 @@ import java.nio.ByteBuffer
 import javax.xml.bind.DatatypeConverter
 
 import dsorting.Setting
-import dsorting.messaging.ChannelTable
-
-import scala.concurrent.Future
 
 object Util {
   def intToByte(int: Int) = {
@@ -24,6 +21,7 @@ object Util {
     buf.getInt()
   }
 }
+
 
 class Key(val bytes: Array[Byte]) {
   override def toString: String = DatatypeConverter.printHexBinary(bytes)
@@ -64,17 +62,13 @@ case class Entry(key: Key, value: Value) {
   }
 }
 
+
 object BufferFactory {
   val size0 = new Array[Byte](0)
   def emptyKeyBuffer() = new Array[Byte](Setting.KeySize)
   def emptyValueBuffer() = new Array[Byte](Setting.ValueSize)
 }
 
-class IODirectoryInfo(val inputDirectories: List[String], val outputDirectory: String) {
-  require(inputDirectories.nonEmpty)
-}
-
-class SlaveStartupInfo(val masterAddress: InetSocketAddress, val ioDirectoryInfo: IODirectoryInfo)
 
 abstract class Identity
 case object Master extends Identity {
@@ -109,13 +103,4 @@ class PartitionTable(val identity: Identity, val slaveRanges: IndexedSeq[SlaveRa
     }
     binarySearch(1, slaveRanges.length)
   }
-}
-
-trait State[T] {
-  def run(): Future[T]
-}
-
-trait ConnectedWorkers {
-  val partitionTable: PartitionTable
-  val channelTable: ChannelTable
 }

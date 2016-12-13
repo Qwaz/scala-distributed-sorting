@@ -1,4 +1,4 @@
-package dsorting.transition.slave
+package dsorting.states.slave
 
 import com.typesafe.scalalogging.Logger
 import dsorting.Setting
@@ -6,14 +6,13 @@ import dsorting.diskio._
 import dsorting.messaging._
 import dsorting.primitive._
 import dsorting.serializer._
-import dsorting.states.slave._
 
 import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Future, Promise}
 
-object SamplingInitializer {
-  def prepareSampling(slaveStartupInfo: SlaveStartupInfo): SamplingState = {
+object SamplingStateFactory {
+  def apply(slaveStartupInfo: SlaveStartupInfo): SamplingState = {
     new FreshState(slaveStartupInfo) with SamplingState {
       val logger = Logger("Slave Sampling")
 

@@ -9,7 +9,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 @RunWith(classOf[JUnitRunner])
 class ParseArgumentSuite extends AsyncFlatSpec {
   {
-    import dsorting.transition.master.ArgumentParser
+    import dsorting.states.master.ArgumentParser
 
     behavior of "ArgumentParser (master)"
 
@@ -27,7 +27,7 @@ class ParseArgumentSuite extends AsyncFlatSpec {
   }
 
   {
-    import dsorting.transition.slave.ArgumentParser
+    import dsorting.states.slave.ArgumentParser
 
     behavior of "ArgumentParser (slave)"
 

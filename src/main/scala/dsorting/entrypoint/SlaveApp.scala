@@ -1,7 +1,7 @@
 package dsorting.entrypoint
 
 import dsorting.future._
-import dsorting.transition.slave._
+import dsorting.states.slave._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
@@ -11,15 +11,15 @@ object SlaveApp extends App {
   val p = Promise[Unit]()
 
   val samplingState =
-    ArgumentParser.parseArgument(args) -> SamplingInitializer.prepareSampling
+    ArgumentParser.parseArgument(args) -> SamplingStateFactory.apply
   val partitioningState = samplingState flatMap {
-    state => state.run() -> PartitioningInitializer.preparePartitioning(state)
+    state => state.run() -> PartitioningStateFactory(state)
   }
   val shufflingState = partitioningState flatMap {
-    state => state.run() -> ShufflingInitializer.prepareShuffling(state)
+    state => state.run() -> ShufflingStateFactory(state)
   }
   val sortingState = shufflingState flatMap {
-    state => state.run() -> SortingInitializer.prepareSorting(state)
+    state => state.run() -> SortingStateFactory(state)
   }
   val result = sortingState flatMap {
     state => state.run() -> { _ => p.success(()) }

@@ -1,4 +1,4 @@
-package dsorting.transition.slave
+package dsorting.states.slave
 
 import java.io.FileInputStream
 
@@ -8,13 +8,12 @@ import dsorting.diskio._
 import dsorting.future._
 import dsorting.messaging._
 import dsorting.primitive._
-import dsorting.states.slave._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Future, Promise}
 
-object PartitioningInitializer {
-  def preparePartitioning(prevState: SamplingState)(partitionTable: PartitionTable): PartitioningState = {
+object PartitioningStateFactory {
+  def apply(prevState: SamplingState)(partitionTable: PartitionTable): PartitioningState = {
     val _partitionTable = partitionTable
     new TransitionFrom(prevState) with PartitioningState {
       val logger = Logger("Slave Partitioning")

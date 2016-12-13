@@ -7,11 +7,10 @@ import dsorting.Setting
 import dsorting.future.Subscription
 import dsorting.messaging._
 import dsorting.primitive._
+import dsorting.states._
+
 
 trait MasterState[T] extends State[T] {
-  val listener: MessageListener
-  val listenerSubscription: Subscription
-
   val numSlaves: Int
 }
 

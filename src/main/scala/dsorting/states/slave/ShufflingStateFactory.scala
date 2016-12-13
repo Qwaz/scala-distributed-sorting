@@ -1,4 +1,4 @@
-package dsorting.transition.slave
+package dsorting.states.slave
 
 import java.io.{File, FileInputStream, FileOutputStream}
 
@@ -8,15 +8,14 @@ import dsorting.diskio._
 import dsorting.messaging._
 import dsorting.primitive._
 import dsorting.serializer.ShufflingDataSerializer
-import dsorting.states.slave._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Future, Promise}
 
 class ShufflingData(val fromSlave: Int, val data: Array[Byte])
 
-object ShufflingInitializer {
-  def prepareShuffling(prevState: PartitioningState)(entryInputStreams: IndexedSeq[FileInputStream]): ShufflingState = {
+object ShufflingStateFactory {
+  def apply(prevState: PartitioningState)(entryInputStreams: IndexedSeq[FileInputStream]): ShufflingState = {
     new TransitionFromConnected(prevState) with ShufflingState {
       val logger = Logger("Slave Shuffling")
 

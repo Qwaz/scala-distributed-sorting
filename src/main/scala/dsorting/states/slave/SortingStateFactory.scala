@@ -1,4 +1,4 @@
-package dsorting.transition.slave
+package dsorting.states.slave
 
 import java.io.File
 
@@ -7,13 +7,12 @@ import dsorting.Setting
 import dsorting.diskio._
 import dsorting.messaging._
 import dsorting.primitive._
-import dsorting.states.slave._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Future, Promise}
 
-object SortingInitializer {
-  def prepareSorting(prevState: ShufflingState)(targetFile: File): SortingState = {
+object SortingStateFactory {
+  def apply(prevState: ShufflingState)(targetFile: File): SortingState = {
     new TransitionFromConnected(prevState) with SortingState {
       val logger = Logger("Slave Sorting")
 

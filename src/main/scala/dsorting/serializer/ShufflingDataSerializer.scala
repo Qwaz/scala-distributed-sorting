@@ -2,7 +2,7 @@ package dsorting.serializer
 
 import java.io._
 
-import dsorting.transition.slave.ShufflingData
+import dsorting.states.slave.ShufflingData
 
 object ShufflingDataSerializer extends Serializer[ShufflingData] {
   override def toByteArray(target: ShufflingData): Array[Byte] = {

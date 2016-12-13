@@ -1,14 +1,13 @@
-package dsorting.transition.master
+package dsorting.states.master
 
 import com.typesafe.scalalogging.Logger
 import dsorting.messaging._
-import dsorting.states.master._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Future, Promise}
 
-object ShufflingInitializer {
-  def prepareShuffling(prevState: PartitioningState)(unit: Unit): ShufflingState = {
+object ShufflingStateFactory {
+  def apply(prevState: PartitioningState)(unit: Unit): ShufflingState = {
     new TransitionFromConnected(prevState) with ShufflingState {
       val logger = Logger("Master Shuffling")
 

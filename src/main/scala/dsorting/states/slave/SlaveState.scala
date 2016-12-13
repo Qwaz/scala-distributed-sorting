@@ -8,15 +8,19 @@ import dsorting.Setting
 import dsorting.future.Subscription
 import dsorting.messaging._
 import dsorting.primitive._
+import dsorting.states._
+
+
+class IODirectoryInfo(val inputDirectories: List[String], val outputDirectory: String) {
+  require(inputDirectories.nonEmpty)
+}
+
+class SlaveStartupInfo(val masterAddress: InetSocketAddress, val ioDirectoryInfo: IODirectoryInfo)
+
 
 trait SlaveState[T] extends State[T] {
   val selfAddress: InetSocketAddress
-
-  val listener: MessageListener
-  val listenerSubscription: Subscription
-
   val channelToMaster: Channel
-
   val ioDirectoryInfo: IODirectoryInfo
 }
 

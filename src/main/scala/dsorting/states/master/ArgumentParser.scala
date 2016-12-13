@@ -1,4 +1,4 @@
-package dsorting.transition.master
+package dsorting.states.master
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future

@@ -1,16 +1,15 @@
-package dsorting.transition.master
+package dsorting.states.master
 
 import com.typesafe.scalalogging.Logger
 import dsorting.messaging._
 import dsorting.primitive._
 import dsorting.serializer.PartitionTableSerializer
-import dsorting.states.master._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Future, Promise}
 
-object PartitioningInitializer {
-  def preparePartitioning(prevState: SamplingState)(partitionTable: PartitionTable): PartitioningState = {
+object PartitioningStateFactory {
+  def apply(prevState: SamplingState)(partitionTable: PartitionTable): PartitioningState = {
     val _partitionTable = partitionTable
     new TransitionFrom(prevState) with PartitioningState {
       val logger = Logger("Master Partitioning")
