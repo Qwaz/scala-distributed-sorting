@@ -32,7 +32,6 @@ object ShufflingInitializer {
           doneCount -= 1
           logger.debug(s"shuffling done received: $doneCount remains")
           if (doneCount == 0) {
-            channelTable.broadcast(Message.withType(MessageType.ShufflingComplete))
             p.success(())
           }
         }
@@ -46,6 +45,8 @@ object ShufflingInitializer {
             }
           }
         }
+
+        channelTable.broadcast(Message.withType(MessageType.PartitioningComplete))
 
         p.future
       }

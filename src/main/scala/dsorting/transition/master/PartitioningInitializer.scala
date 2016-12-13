@@ -30,7 +30,6 @@ object PartitioningInitializer {
           doneCount -= 1
           logger.debug(s"partition done received: $doneCount remains")
           if (doneCount == 0) {
-            channelTable.broadcast(Message.withType(MessageType.PartitioningComplete))
             p.success(())
           }
         }

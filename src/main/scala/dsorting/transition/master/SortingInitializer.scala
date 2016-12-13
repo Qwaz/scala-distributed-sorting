@@ -37,6 +37,8 @@ object SortingInitializer {
           }
         }
 
+        channelTable.broadcast(Message.withType(MessageType.ShufflingComplete))
+
         p.future
       }
 
